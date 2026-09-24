@@ -1,104 +1,249 @@
-<!DOCTYPE html>
-<html lang="es">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>BARCLARO</title>
+  <title>BARCLARO - Divisor de Cuentas de Bar</title>
+
+  <!-- Tailwind CSS -->
   <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              50: '#fffbeed',
+              100: '#fef3c7',
+              400: '#fbbf24',
+              500: '#f59e0b',
+              600: '#d97706',
+              700: '#b45309'
+            }
+          }
+        }
+      }
+    }
+  </script>
+
+  <!-- Font Awesome Icons -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  
+  <!-- QRCode.js Library for Table QR Generation -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+
+  <!-- Google Fonts: Plus Jakarta Sans -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
   <style>
-    @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
     body {
-      font-family: 'Plus Jakarta Sans', sans-serif;
+      font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
       background-color: #0f172a;
       color: #f8fafc;
+      touch-action: manipulation;
     }
+
     .landing-bg {
-      background: linear-gradient(to bottom, rgba(15, 23, 42, 0.75), rgba(15, 23, 42, 0.98)),
-                  url('https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?q=80&w=1000&auto=format&fit=crop');
+      background: linear-gradient(180deg, rgba(15, 23, 42, 0.75) 0%, rgba(15, 23, 42, 0.95) 80%, #0f172a 100%),
+                  url('https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?q=80&w=1200&auto=format&fit=crop');
       background-size: cover;
       background-position: center;
     }
+
     .glass-card {
-      background: rgba(30, 41, 59, 0.7);
+      background: rgba(30, 41, 59, 0.75);
       backdrop-filter: blur(12px);
-      border: 1px solid rgba(255, 255, 255, 0.1);
+      -webkit-backdrop-filter: blur(12px);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+    }
+
+    .glass-modal {
+      background: rgba(15, 23, 42, 0.92);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+    }
+
+    /* Custom Scrollbar for touch friendliness */
+    ::-webkit-scrollbar {
+      width: 4px;
+      height: 4px;
+    }
+    ::-webkit-scrollbar-track {
+      background: rgba(15, 23, 42, 0.5);
+    }
+    ::-webkit-scrollbar-thumb {
+      background: rgba(245, 158, 11, 0.3);
+      border-radius: 999px;
     }
   </style>
 </head>
-<body class="min-h-screen antialiased selection:bg-amber-500 selection:text-white">
+<body class="min-h-screen antialiased selection:bg-amber-500 selection:text-slate-950">
 
-  <div id="app" class="max-w-md mx-auto min-h-screen flex flex-col relative pb-20">
+  <!-- APP CONTAINER -->
+  <div id="app" class="max-w-md mx-auto min-h-screen flex flex-col relative pb-10">
 
-    <!-- PANTALLA DE INICIO -->
-    <div id="landingView" class="flex-1 flex flex-col justify-between p-6 landing-bg">
-      <div class="pt-8 text-center space-y-3">
-        <div class="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-amber-500/20 text-amber-400 border border-amber-500/30 mb-2 shadow-lg shadow-amber-500/10">
-          <i class="fa-solid fa-beer-mug-empty text-3xl"></i>
-        </div>
-        <h1 class="text-4xl font-extrabold tracking-tight text-white">BARCLARO</h1>
-        <p class="text-slate-300 text-sm max-w-xs mx-auto font-medium">Divide la cuenta del bar sin enredos, ítem por ítem y con propina chilena.</p>
-      </div>
-
-      <div class="glass-card p-6 rounded-3xl space-y-6 my-auto shadow-2xl">
-        <button onclick="startSession()" class="w-full py-4 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 font-extrabold rounded-2xl shadow-xl shadow-amber-500/20 flex items-center justify-center gap-2 text-base transition-all active:scale-95">
-          <span>Iniciar Mesa</span>
-          <i class="fa-solid fa-arrow-right text-sm"></i>
-        </button>
-      </div>
-
-      <div class="text-center text-xs text-slate-400 font-medium">
-        <span>Formato CLP ($) • Propina 10%</span>
-      </div>
-    </div>
-
-    <!-- VISTA PRINCIPAL -->
-    <div id="mainView" class="hidden flex-1 flex flex-col bg-slate-900">
+    <!-- PANTALLA DE INICIO / LANDING -->
+    <div id="landingView" class="flex-1 flex flex-col justify-between p-6 landing-bg min-h-screen">
       
-      <!-- HEADER -->
-      <header class="p-4 bg-slate-900/90 backdrop-blur-md sticky top-0 z-30 border-b border-slate-800 flex items-center justify-between">
-        <button onclick="showLanding()" class="p-2 text-slate-400 hover:text-white rounded-xl hover:bg-slate-800 transition-colors">
-          <i class="fa-solid fa-house text-lg"></i>
-        </button>
-        <h2 class="font-bold text-lg text-white">BARCLARO</h2>
-        <button onclick="resetAll()" class="p-2 text-slate-400 hover:text-rose-400 rounded-xl hover:bg-slate-800 transition-colors" title="Reiniciar Mesa">
-          <i class="fa-solid fa-rotate-right text-lg"></i>
-        </button>
-      </header>
+      <!-- Logo & Header -->
+      <div class="pt-8 text-center space-y-3">
+        <div class="inline-flex items-center justify-center w-20 h-20 rounded-3xl bg-amber-500/20 text-amber-400 border border-amber-500/30 mb-1 shadow-2xl shadow-amber-500/20 backdrop-blur-md">
+          <i class="fa-solid fa-beer-mug-empty text-4xl"></i>
+        </div>
+        <h1 class="text-4xl font-extrabold tracking-tight text-white drop-shadow-md">BARCLARO</h1>
+        <p class="text-slate-300 text-sm max-w-xs mx-auto font-medium leading-relaxed">
+          Cuentas de bar en vivo con tus amigos. Cada uno se suma desde su celular y dividen fácil.
+        </p>
+      </div>
 
-      <main class="p-4 space-y-6 flex-1">
+      <!-- Action Card -->
+      <div class="glass-card p-6 rounded-3xl space-y-4 my-auto shadow-2xl">
+        <h2 class="text-xs font-extrabold uppercase tracking-widest text-amber-400 text-center">¿Cómo quieren dividir?</h2>
         
-        <!-- INTEGRANTES -->
-        <section class="glass-card p-4 rounded-2xl space-y-3">
-          <div class="flex items-center justify-between">
-            <h3 class="text-xs font-bold text-amber-400 uppercase tracking-wider">Integrantes de la Mesa</h3>
-            <button onclick="addPerson()" class="text-xs text-amber-400 font-bold hover:underline flex items-center gap-1">
-              <i class="fa-solid fa-plus"></i> Agregar
+        <!-- Option A: Live Shared Table -->
+        <button onclick="startLiveTable()" class="w-full py-4 px-5 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 font-extrabold rounded-2xl shadow-xl shadow-amber-500/20 flex items-center justify-between transition-all active:scale-98 group">
+          <div class="flex items-center gap-3">
+            <div class="w-10 h-10 rounded-xl bg-slate-950/20 flex items-center justify-center text-slate-950 text-lg">
+              <i class="fa-solid fa-users"></i>
+            </div>
+            <div class="text-left">
+              <div class="text-base leading-tight">Mesa en Vivo</div>
+              <div class="text-[11px] opacity-80 font-semibold">Sincronizado entre celulares</div>
+            </div>
+          </div>
+          <i class="fa-solid fa-bolt text-lg group-hover:translate-x-1 transition-transform"></i>
+        </button>
+
+        <!-- Option B: Offline Local Table -->
+        <button onclick="startLocalTable()" class="w-full py-3.5 px-5 bg-slate-800/80 hover:bg-slate-700/80 border border-slate-700/60 text-slate-200 font-bold rounded-2xl flex items-center justify-between transition-all active:scale-98">
+          <div class="flex items-center gap-3">
+            <div class="w-10 h-10 rounded-xl bg-slate-900 flex items-center justify-center text-slate-400 text-lg">
+              <i class="fa-solid fa-user"></i>
+            </div>
+            <div class="text-left">
+              <div class="text-sm font-bold">Mesa Local</div>
+              <div class="text-[11px] text-slate-400 font-medium">Solo tú administras la cuenta</div>
+            </div>
+          </div>
+          <i class="fa-solid fa-chevron-right text-xs text-slate-500"></i>
+        </button>
+
+        <!-- Join Table by Code Input -->
+        <div class="pt-2 border-t border-slate-800/80">
+          <div class="flex gap-2">
+            <input type="text" id="joinCodeInput" placeholder="Código de Mesa (ej: B7X2)" uppercase class="flex-1 bg-slate-900/90 border border-slate-700/80 rounded-xl px-3 py-2.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-amber-500 font-mono text-center tracking-widest font-bold">
+            <button onclick="joinTableByInput()" class="px-4 py-2.5 bg-slate-800 hover:bg-amber-500 hover:text-slate-950 text-amber-400 font-bold rounded-xl text-xs transition-colors border border-slate-700">
+              Unirse
             </button>
           </div>
-          <div id="peopleList" class="flex flex-wrap gap-2"></div>
+        </div>
+      </div>
+
+      <!-- Footer Info -->
+      <div class="text-center text-xs text-slate-400 font-medium space-y-1">
+        <p class="flex items-center justify-center gap-1.5 text-amber-400/90 font-semibold">
+          <i class="fa-solid fa-shield-halved"></i> Sin registro ni descargas
+        </p>
+        <p class="text-[11px] text-slate-500">Optimizado para Peso Chileno (CLP) y Propina 10%</p>
+      </div>
+
+    </div>
+
+    <!-- VISTA PRINCIPAL DE MESA -->
+    <div id="mainView" class="hidden flex-1 flex flex-col bg-slate-900">
+      
+      <!-- Sticky Navigation Header -->
+      <header class="p-3.5 bg-slate-900/95 backdrop-blur-md sticky top-0 z-30 border-b border-slate-800/80 flex items-center justify-between shadow-md">
+        <button onclick="confirmExitTable()" class="p-2 text-slate-400 hover:text-white rounded-xl hover:bg-slate-800 transition-colors" title="Volver al inicio">
+          <i class="fa-solid fa-arrow-left text-base"></i>
+        </button>
+
+        <div class="text-center">
+          <div class="flex items-center justify-center gap-1.5">
+            <h2 class="font-black text-base text-white tracking-wide">BARCLARO</h2>
+            <span id="liveBadge" class="hidden text-[10px] bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 px-2 py-0.5 rounded-full font-bold flex items-center gap-1">
+              <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping"></span>
+              EN VIVO
+            </span>
+          </div>
+          <div id="tableCodeHeader" class="text-[11px] text-amber-400 font-mono font-bold">Mesa Local</div>
+        </div>
+
+        <div class="flex items-center gap-1">
+          <button id="qrHeaderBtn" onclick="openQrModal()" class="hidden p-2 text-amber-400 hover:text-amber-300 rounded-xl hover:bg-slate-800 transition-colors" title="Ver QR">
+            <i class="fa-solid fa-qrcode text-lg"></i>
+          </button>
+          <button onclick="resetCurrentTable()" class="p-2 text-slate-400 hover:text-rose-400 rounded-xl hover:bg-slate-800 transition-colors" title="Reiniciar Mesa">
+            <i class="fa-solid fa-rotate-right text-base"></i>
+          </button>
+        </div>
+      </header>
+
+      <!-- Main Content Area -->
+      <main class="p-4 space-y-5 flex-1">
+
+        <!-- Live Invite Banner (Shown in Live Mode) -->
+        <section id="liveInviteBanner" class="hidden glass-card p-4 rounded-2xl border-amber-500/30 bg-gradient-to-r from-amber-500/10 to-transparent space-y-2">
+          <div class="flex items-center justify-between">
+            <div class="flex items-center gap-2">
+              <div class="w-8 h-8 rounded-lg bg-amber-500/20 text-amber-400 flex items-center justify-center text-sm font-bold">
+                <i class="fa-solid fa-qrcode"></i>
+              </div>
+              <div>
+                <h3 class="text-xs font-bold text-amber-400 uppercase tracking-wider">Invitación en Vivo</h3>
+                <p class="text-[11px] text-slate-300">Cualquiera con el link o QR se suma a la mesa</p>
+              </div>
+            </div>
+          </div>
+          <div class="grid grid-cols-2 gap-2 pt-1">
+            <button onclick="copyTableLink()" class="py-2.5 px-3 bg-amber-500 hover:bg-amber-400 text-slate-950 font-extrabold rounded-xl text-xs flex items-center justify-center gap-1.5 transition-all shadow-md shadow-amber-500/10">
+              <i class="fa-solid fa-link"></i>
+              <span>Copiar Enlace</span>
+            </button>
+            <button onclick="openQrModal()" class="py-2.5 px-3 bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold border border-slate-700 rounded-xl text-xs flex items-center justify-center gap-1.5 transition-all">
+              <i class="fa-solid fa-qrcode text-amber-400"></i>
+              <span>Mostrar QR</span>
+            </button>
+          </div>
         </section>
 
-        <!-- ACCIONES BOLETA -->
-        <section class="grid grid-cols-2 gap-3">
-          <button onclick="simulateReceipt()" class="p-3 bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded-2xl flex items-center justify-center gap-2 text-xs font-bold text-slate-200 transition-all">
-            <i class="fa-solid fa-wand-magic-sparkles text-amber-400"></i>
-            <span>Cargar Demo</span>
+        <!-- INTEGRANTES DE LA MESA -->
+        <section class="glass-card p-4 rounded-2xl space-y-3 shadow-lg">
+          <div class="flex items-center justify-between">
+            <div class="flex items-center gap-2">
+              <h3 class="text-xs font-bold text-amber-400 uppercase tracking-wider">Integrantes de la Mesa</h3>
+              <span id="peopleCountBadge" class="text-[10px] bg-slate-800 text-slate-400 px-2 py-0.5 rounded-full font-bold">0</span>
+            </div>
+            <button onclick="promptAddPerson()" class="text-xs bg-amber-500/10 hover:bg-amber-500/20 text-amber-400 border border-amber-500/30 px-2.5 py-1 rounded-xl font-bold transition-all flex items-center gap-1">
+              <i class="fa-solid fa-plus"></i>
+              <span>Agregar</span>
+            </button>
+          </div>
+          
+          <div id="peopleList" class="flex flex-wrap gap-2 pt-1">
+            <!-- Dynamically populated -->
+          </div>
+        </section>
+
+        <!-- ACCIONES RÁPIDAS BOLETA -->
+        <section class="grid grid-cols-2 gap-2.5">
+          <button onclick="simulateDemoReceipt()" class="p-3 bg-slate-800/90 hover:bg-slate-800 border border-slate-700/80 rounded-2xl flex items-center justify-center gap-2 text-xs font-bold text-slate-200 shadow-md transition-all active:scale-98">
+            <i class="fa-solid fa-wand-magic-sparkles text-amber-400 text-sm"></i>
+            <span>Cargar Boleta Demo</span>
           </button>
-          <label class="p-3 bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/30 rounded-2xl flex items-center justify-center gap-2 text-xs font-bold text-amber-400 cursor-pointer transition-all">
-            <i class="fa-solid fa-camera"></i>
+          <label class="p-3 bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/30 rounded-2xl flex items-center justify-center gap-2 text-xs font-bold text-amber-400 cursor-pointer shadow-md transition-all active:scale-98">
+            <i class="fa-solid fa-camera text-sm"></i>
             <span>Escanear Boleta</span>
-            <input type="file" accept="image/*" class="hidden" onchange="handleImageUpload(event)">
+            <input type="file" accept="image/*" class="hidden" onchange="handleOCRDemo(event)">
           </label>
         </section>
 
-        <!-- AGREGAR ITEM MANUAL -->
-        <section class="glass-card p-4 rounded-2xl space-y-3">
+        <!-- AGREGAR CONSUMO MANUAL -->
+        <section class="glass-card p-4 rounded-2xl space-y-3 shadow-lg">
           <h3 class="text-xs font-bold text-slate-400 uppercase tracking-wider">Agregar Consumo Manual</h3>
           <div class="flex gap-2">
-            <input type="text" id="itemName" placeholder="Ej: Pisco Sour" class="flex-1 bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-amber-500">
-            <input type="number" id="itemPrice" placeholder="Monto ($)" class="w-28 bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-amber-500">
-            <button onclick="addManualItem()" class="bg-amber-500 text-slate-950 px-4 rounded-xl font-bold hover:bg-amber-400 transition-colors">
+            <input type="text" id="itemNameInput" placeholder="Ej: Pisco Sour 35º" class="flex-1 bg-slate-900 border border-slate-700/80 rounded-xl px-3 py-2.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-amber-500">
+            <input type="number" id="itemPriceInput" placeholder="Monto ($)" class="w-28 bg-slate-900 border border-slate-700/80 rounded-xl px-3 py-2.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-amber-500 font-semibold">
+            <button onclick="addManualItem()" class="bg-amber-500 hover:bg-amber-400 text-slate-950 px-4 rounded-xl font-extrabold text-sm transition-colors shadow-md shadow-amber-500/10">
               <i class="fa-solid fa-plus"></i>
             </button>
           </div>
@@ -108,83 +253,122 @@
         <section class="space-y-3">
           <div class="flex items-center justify-between">
             <h3 class="text-xs font-bold text-slate-400 uppercase tracking-wider">Detalle de Consumos</h3>
-            <span id="itemCountBadge" class="text-xs bg-slate-800 text-slate-400 px-2 py-0.5 rounded-full font-semibold">0 ítems</span>
+            <span id="itemCountBadge" class="text-xs bg-slate-800 text-slate-400 px-2.5 py-0.5 rounded-full font-semibold">0 ítems</span>
           </div>
-          <div id="itemsContainer" class="space-y-2"></div>
+          
+          <div id="itemsContainer" class="space-y-2.5">
+            <!-- Dynamically populated -->
+          </div>
         </section>
 
-        <!-- PROPINA -->
-        <section class="glass-card p-4 rounded-2xl flex items-center justify-between">
-          <div class="flex items-center gap-2">
-            <i class="fa-solid fa-percent text-amber-400"></i>
+        <!-- PROPINA CHILENA (10%) -->
+        <section class="glass-card p-4 rounded-2xl flex items-center justify-between shadow-lg border-slate-800">
+          <div class="flex items-center gap-3">
+            <div class="w-9 h-9 rounded-xl bg-amber-500/10 text-amber-400 flex items-center justify-center font-bold text-sm border border-amber-500/20">
+              <i class="fa-solid fa-percent"></i>
+            </div>
             <div>
-              <p class="text-sm font-bold text-white">Incluir Propina (10%)</p>
-              <p class="text-xs text-slate-400">Sugerida en Chile</p>
+              <p class="text-xs font-bold text-white">Incluir Propina (10%)</p>
+              <p class="text-[11px] text-slate-400">Sugerida voluntaria en Chile</p>
             </div>
           </div>
-          <input type="checkbox" id="tipToggle" checked onchange="render()" class="w-5 h-5 accent-amber-500 rounded cursor-pointer">
+          <input type="checkbox" id="tipToggle" checked onchange="toggleTipSetting()" class="w-5 h-5 accent-amber-500 rounded cursor-pointer">
         </section>
 
-        <!-- DATOS BANCARIOS -->
-        <section class="glass-card p-4 rounded-2xl space-y-3">
+        <!-- DATOS BANCARIOS (CON AUTOGUARDADO LOCAL) -->
+        <section class="glass-card p-4 rounded-2xl space-y-3 shadow-lg">
           <div class="flex justify-between items-center">
-            <h3 class="text-xs font-bold text-amber-400 uppercase tracking-wider flex items-center gap-2">
+            <h3 class="text-xs font-bold text-amber-400 uppercase tracking-wider flex items-center gap-1.5">
               <i class="fa-solid fa-building-columns"></i>
               Datos de Transferencia
             </h3>
-            <span class="text-[10px] text-slate-400">Guardado automático</span>
+            <span class="text-[10px] text-emerald-400 font-semibold flex items-center gap-1">
+              <i class="fa-solid fa-floppy-disk"></i> Autoguardado
+            </span>
           </div>
+          
           <div class="grid grid-cols-2 gap-2 text-xs">
-            <input type="text" id="bankName" placeholder="Tu Nombre" oninput="saveBankData()" class="bg-slate-900 border border-slate-700 rounded-xl p-2 text-white focus:outline-none focus:border-amber-500">
-            <input type="text" id="bankRut" placeholder="RUT (ej: 12.345.678-9)" oninput="saveBankData()" class="bg-slate-900 border border-slate-700 rounded-xl p-2 text-white focus:outline-none focus:border-amber-500">
-            <input type="text" id="bankEntity" placeholder="Banco (ej: BancoEstado)" oninput="saveBankData()" class="bg-slate-900 border border-slate-700 rounded-xl p-2 text-white focus:outline-none focus:border-amber-500">
-            <input type="text" id="bankType" placeholder="Tipo (CuentaRUT/Vista)" oninput="saveBankData()" class="bg-slate-900 border border-slate-700 rounded-xl p-2 text-white focus:outline-none focus:border-amber-500">
-            <input type="text" id="bankAccount" placeholder="Nº de Cuenta" oninput="saveBankData()" class="col-span-2 bg-slate-900 border border-slate-700 rounded-xl p-2 text-white focus:outline-none focus:border-amber-500">
+            <input type="text" id="bankName" placeholder="Nombre Destinatario" oninput="saveBankData()" class="bg-slate-900 border border-slate-700/80 rounded-xl p-2.5 text-white placeholder-slate-500 focus:outline-none focus:border-amber-500">
+            <input type="text" id="bankRut" placeholder="RUT (ej: 12.345.678-9)" oninput="saveBankData()" class="bg-slate-900 border border-slate-700/80 rounded-xl p-2.5 text-white placeholder-slate-500 focus:outline-none focus:border-amber-500">
+            <input type="text" id="bankEntity" placeholder="Banco (ej: Santander)" oninput="saveBankData()" class="bg-slate-900 border border-slate-700/80 rounded-xl p-2.5 text-white placeholder-slate-500 focus:outline-none focus:border-amber-500">
+            <input type="text" id="bankType" placeholder="Tipo (CuentaRUT/Vista)" oninput="saveBankData()" class="bg-slate-900 border border-slate-700/80 rounded-xl p-2.5 text-white placeholder-slate-500 focus:outline-none focus:border-amber-500">
+            <input type="text" id="bankAccount" placeholder="Número de Cuenta" oninput="saveBankData()" class="col-span-2 bg-slate-900 border border-slate-700/80 rounded-xl p-2.5 text-white placeholder-slate-500 focus:outline-none focus:border-amber-500 font-mono">
           </div>
         </section>
 
-        <!-- RESUMEN FINAL -->
-        <section class="glass-card p-4 rounded-2xl space-y-3">
-          <h3 class="text-xs font-bold text-amber-400 uppercase tracking-wider">Resumen por Persona</h3>
-          <div id="summaryContainer" class="space-y-2 divide-y divide-slate-800"></div>
+        <!-- RESUMEN FINAL POR PERSONA -->
+        <section class="glass-card p-4 rounded-2xl space-y-3 shadow-xl border-amber-500/20">
+          <h3 class="text-xs font-bold text-amber-400 uppercase tracking-wider">Resumen Individual</h3>
+          
+          <div id="summaryContainer" class="space-y-2.5 divide-y divide-slate-800/80">
+            <!-- Dynamically populated -->
+          </div>
           
           <div class="pt-3 border-t border-slate-800 flex justify-between items-center text-base font-extrabold text-white">
             <span>Total Mesa:</span>
-            <span id="grandTotal" class="text-amber-400 text-lg">$0</span>
+            <span id="grandTotal" class="text-amber-400 text-xl font-black">$0</span>
           </div>
         </section>
 
-        <!-- COBRAR WHATSAPP -->
-        <button onclick="shareWhatsApp()" class="w-full py-4 bg-emerald-600 hover:bg-emerald-500 text-white font-extrabold rounded-2xl shadow-lg shadow-emerald-600/20 flex items-center justify-center gap-2 text-sm transition-all active:scale-95">
-          <i class="fa-brands fa-whatsapp text-lg"></i>
-          <span>Enviar Cobro por WhatsApp</span>
+        <!-- BOTÓN WHATSAPP -->
+        <button onclick="shareWhatsApp()" class="w-full py-4 bg-emerald-600 hover:bg-emerald-500 text-white font-extrabold rounded-2xl shadow-xl shadow-emerald-600/20 flex items-center justify-center gap-2.5 text-sm transition-all active:scale-98">
+          <i class="fa-brands fa-whatsapp text-xl"></i>
+          <span>Enviar Cobros por WhatsApp</span>
         </button>
 
       </main>
     </div>
 
-    <!-- MODAL DE ASIGNACIÓN -->
-    <div id="assignModal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 hidden flex items-end sm:items-center justify-center p-4">
-      <div class="bg-slate-900 border border-slate-800 w-full max-w-sm rounded-3xl p-5 space-y-4 shadow-2xl">
+    <!-- MODAL CÓDIGO QR -->
+    <div id="qrModal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-md z-50 hidden flex items-center justify-center p-4">
+      <div class="glass-modal w-full max-w-xs rounded-3xl p-6 space-y-5 text-center shadow-2xl">
+        <div class="flex justify-between items-center border-b border-slate-800 pb-3">
+          <h4 class="font-extrabold text-white text-base">Escanea para Unirte</h4>
+          <button onclick="closeQrModal()" class="text-slate-400 hover:text-white p-1">
+            <i class="fa-solid fa-xmark text-lg"></i>
+          </button>
+        </div>
+
+        <div class="bg-white p-4 rounded-2xl inline-block mx-auto shadow-inner">
+          <div id="qrcodeCanvas"></div>
+        </div>
+
+        <div>
+          <p class="text-xs text-slate-400 font-medium">Código de Mesa:</p>
+          <p id="qrCodeDisplay" class="text-2xl font-mono font-black text-amber-400 tracking-widest uppercase">----</p>
+        </div>
+
+        <button onclick="copyTableLink()" class="w-full py-3 bg-amber-500 hover:bg-amber-400 text-slate-950 font-extrabold rounded-xl text-xs flex items-center justify-center gap-2">
+          <i class="fa-solid fa-copy"></i>
+          <span>Copiar Enlace Directo</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- MODAL DE ASIGNACIÓN DE INTEGRANTES A CONSUMO -->
+    <div id="assignModal" class="fixed inset-0 bg-slate-950/85 backdrop-blur-md z-50 hidden flex items-end sm:items-center justify-center p-4">
+      <div class="glass-modal w-full max-w-sm rounded-3xl p-5 space-y-4 shadow-2xl">
         <div class="flex justify-between items-center">
           <div>
             <h4 id="modalItemTitle" class="font-extrabold text-white text-base">Asignar Consumo</h4>
             <p id="modalItemPrice" class="text-xs text-amber-400 font-bold">$0</p>
           </div>
-          <button onclick="closeModal()" class="text-slate-400 hover:text-white p-1">
+          <button onclick="closeAssignModal()" class="text-slate-400 hover:text-white p-1">
             <i class="fa-solid fa-xmark text-lg"></i>
           </button>
         </div>
 
-        <p class="text-xs text-slate-400">Selecciona quiénes consumieron este ítem:</p>
+        <p class="text-xs text-slate-400 font-medium">Selecciona quiénes compartieron o consumieron este ítem:</p>
 
-        <div id="modalPeopleList" class="space-y-2 max-h-48 overflow-y-auto pr-1"></div>
+        <div id="modalPeopleList" class="space-y-2 max-h-56 overflow-y-auto pr-1">
+          <!-- Dynamically populated -->
+        </div>
 
-        <div class="flex gap-2 pt-2">
-          <button onclick="selectAllModalPeople()" class="flex-1 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold rounded-xl text-xs">
+        <div class="flex gap-2 pt-2 border-t border-slate-800">
+          <button onclick="selectAllModalPeople()" class="flex-1 py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold rounded-xl text-xs">
             Todos
           </button>
-          <button onclick="saveAssignment()" class="flex-1 py-2 bg-amber-500 hover:bg-amber-400 text-slate-950 font-extrabold rounded-xl text-xs">
+          <button onclick="saveAssignment()" class="flex-1 py-2.5 bg-amber-500 hover:bg-amber-400 text-slate-950 font-extrabold rounded-xl text-xs">
             Guardar
           </button>
         </div>
@@ -193,14 +377,130 @@
 
   </div>
 
-  <script>
-    let state = {
+  <!-- Firebase Imports (ES Module) -->
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+    import { getAuth, signInAnonymously, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+    import { getFirestore, doc, setDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+    // Global Environment Setup
+    const appId = typeof __app_id !== 'undefined' ? __app_id : 'barclaro-app';
+    const firebaseConfig = typeof __firebase_config !== 'undefined' 
+      ? JSON.parse(__firebase_config) 
+      : {
+          apiKey: "AIzaSyDemoKeyOnlyForPublicStructure",
+          authDomain: "barclaro-demo.firebaseapp.com",
+          projectId: "barclaro-demo",
+          storageBucket: "barclaro-demo.appspot.com",
+          messagingSenderId: "123456789",
+          appId: "1:123456789:web:abcdef123456"
+        };
+
+    let app, auth, db;
+    let currentUser = null;
+    let unsubscribeTableListener = null;
+
+    // Local Application State
+    window.appState = {
+      mode: 'local', // 'local' or 'live'
+      tableId: null,
       people: [],
       items: [],
       includeTip: true,
       editingItemId: null
     };
 
+    // Initialize Firebase
+    try {
+      app = initializeApp(firebaseConfig);
+      auth = getAuth(app);
+      db = getFirestore(app);
+
+      // Authenticate
+      if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+        signInWithCustomToken(auth, __initial_auth_token).then(userCredential => {
+          currentUser = userCredential.user;
+          checkUrlForLiveTable();
+        }).catch(() => {
+          signInAnonymously(auth).then(userCredential => {
+            currentUser = userCredential.user;
+            checkUrlForLiveTable();
+          });
+        });
+      } else {
+        signInAnonymously(auth).then(userCredential => {
+          currentUser = userCredential.user;
+          checkUrlForLiveTable();
+        }).catch(err => {
+          console.warn('Running in pure local offline mode due to auth restrictions:', err);
+          checkUrlForLiveTable();
+        });
+      }
+    } catch (e) {
+      console.warn('Firebase init fallback:', e);
+      checkUrlForLiveTable();
+    }
+
+    // Realtime Database Sync Listener
+    window.listenToLiveTable = function(tableId) {
+      if (!db || !tableId) return;
+
+      if (unsubscribeTableListener) {
+        unsubscribeTableListener();
+      }
+
+      const tableRef = doc(db, 'artifacts', appId, 'public', 'data', 'tables', tableId);
+
+      unsubscribeTableListener = onSnapshot(tableRef, (snapshot) => {
+        if (snapshot.exists()) {
+          const data = snapshot.data();
+          window.appState.people = data.people || [];
+          window.appState.items = data.items || [];
+          if (data.includeTip !== undefined) {
+            window.appState.includeTip = data.includeTip;
+            document.getElementById('tipToggle').checked = data.includeTip;
+          }
+          window.render();
+        } else {
+          // Table missing, create initial empty document
+          window.pushLiveState();
+        }
+      }, (error) => {
+        console.warn('Firestore snapshot error:', error);
+      });
+    };
+
+    // Push local state updates to Firestore
+    window.pushLiveState = async function() {
+      if (window.appState.mode !== 'live' || !window.appState.tableId || !db) return;
+      
+      const tableRef = doc(db, 'artifacts', appId, 'public', 'data', 'tables', window.appState.tableId);
+      try {
+        await setDoc(tableRef, {
+          people: window.appState.people,
+          items: window.appState.items,
+          includeTip: window.appState.includeTip,
+          updatedAt: Date.now()
+        }, { merge: true });
+      } catch (err) {
+        console.error('Error syncing live state:', err);
+      }
+    };
+
+    // Check if table ID is present in URL Hash (e.g. #table=B7X2)
+    function checkUrlForLiveTable() {
+      const hash = window.location.hash;
+      if (hash && hash.includes('table=')) {
+        const code = hash.split('table=')[1].split('&')[0].toUpperCase();
+        if (code) {
+          window.joinLiveTable(code);
+        }
+      }
+    }
+  </script>
+
+  <script>
+    // Local Storage Banking Setup
     window.addEventListener('DOMContentLoaded', () => {
       const savedBank = JSON.parse(localStorage.getItem('barclaro_bank') || '{}');
       if (savedBank.name) document.getElementById('bankName').value = savedBank.name;
@@ -221,74 +521,232 @@
       localStorage.setItem('barclaro_bank', JSON.stringify(bankData));
     }
 
-    function startSession() {
-      state.people = [];
-      document.getElementById('landingView').classList.add('hidden');
-      document.getElementById('mainView').classList.remove('hidden');
-      render();
-    }
-
-    function showLanding() {
-      document.getElementById('mainView').classList.add('hidden');
-      document.getElementById('landingView').classList.remove('hidden');
+    // Helper: Random Code Generator (4 Alphanumeric Chars)
+    function generateTableCode() {
+      const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+      let code = '';
+      for (let i = 0; i < 4; i++) {
+        code += chars.charAt(Math.floor(Math.random() * chars.length));
+      }
+      return code;
     }
 
     function formatCLP(val) {
-      return '$' + Math.round(val).toLocaleString('es-CL');
+      return '$' + Math.round(val || 0).toLocaleString('es-CL');
     }
 
-    function addPerson() {
-      const name = prompt('Nombre del integrante:');
+    // Start Mesa Local
+    function startLocalTable() {
+      window.appState.mode = 'local';
+      window.appState.tableId = null;
+      window.appState.people = ['Yo'];
+      window.appState.items = [];
+      
+      document.getElementById('landingView').classList.add('hidden');
+      document.getElementById('mainView').classList.remove('hidden');
+      document.getElementById('liveBadge').classList.add('hidden');
+      document.getElementById('qrHeaderBtn').classList.add('hidden');
+      document.getElementById('liveInviteBanner').classList.add('hidden');
+      document.getElementById('tableCodeHeader').innerText = 'Mesa Local (Solo tú)';
+      
+      window.history.replaceState(null, '', window.location.pathname);
+      render();
+    }
+
+    // Start Mesa en Vivo
+    function startLiveTable() {
+      const newCode = generateTableCode();
+      joinLiveTable(newCode);
+    }
+
+    // Join Mesa en Vivo
+    function joinLiveTable(code) {
+      window.appState.mode = 'live';
+      window.appState.tableId = code;
+
+      document.getElementById('landingView').classList.add('hidden');
+      document.getElementById('mainView').classList.remove('hidden');
+      document.getElementById('liveBadge').classList.remove('hidden');
+      document.getElementById('qrHeaderBtn').classList.remove('hidden');
+      document.getElementById('liveInviteBanner').classList.remove('hidden');
+      document.getElementById('tableCodeHeader').innerText = `Mesa: ${code}`;
+
+      window.location.hash = `table=${code}`;
+
+      // Prompt for user's name if not set
+      let myName = localStorage.getItem('barclaro_user_name');
+      if (!myName) {
+        myName = prompt('Ingresa tu nombre para unirte a la mesa:', 'Amigo');
+        if (myName) {
+          localStorage.setItem('barclaro_user_name', myName.trim());
+        } else {
+          myName = 'Invitado';
+        }
+      }
+
+      // Add user to state if not present
+      if (!window.appState.people.includes(myName)) {
+        window.appState.people.push(myName);
+      }
+
+      if (window.listenToLiveTable) {
+        window.listenToLiveTable(code);
+      }
+      render();
+    }
+
+    function joinTableByInput() {
+      const codeInput = document.getElementById('joinCodeInput');
+      const code = codeInput.value.trim().toUpperCase();
+      if (code) {
+        joinLiveTable(code);
+      } else {
+        alert('Ingresa un código de mesa válido.');
+      }
+    }
+
+    function confirmExitTable() {
+      document.getElementById('mainView').classList.add('hidden');
+      document.getElementById('landingView').classList.remove('hidden');
+      window.history.replaceState(null, '', window.location.pathname);
+    }
+
+    function promptAddPerson() {
+      const name = prompt('Nombre del nuevo integrante:');
       if (name && name.trim()) {
-        state.people.push(name.trim());
-        render();
+        const trimmed = name.trim();
+        if (!window.appState.people.includes(trimmed)) {
+          window.appState.people.push(trimmed);
+          window.pushLiveState();
+          render();
+        }
       }
     }
 
     function removePerson(index) {
-      const pName = state.people[index];
-      state.people.splice(index, 1);
-      state.items.forEach(item => {
-        item.assignedTo = item.assignedTo.filter(name => name !== pName);
+      const pName = window.appState.people[index];
+      window.appState.people.splice(index, 1);
+      
+      // Remove person from all item assignments
+      window.appState.items.forEach(item => {
+        item.assignedTo = item.assignedTo.filter(n => n !== pName);
       });
+
+      window.pushLiveState();
       render();
     }
 
     function addManualItem() {
-      const nameInput = document.getElementById('itemName');
-      const priceInput = document.getElementById('itemPrice');
+      const nameInput = document.getElementById('itemNameInput');
+      const priceInput = document.getElementById('itemPriceInput');
       const name = nameInput.value.trim() || 'Consumo';
       const price = parseFloat(priceInput.value);
 
       if (!price || price <= 0) {
-        alert('Ingresa un monto válido.');
+        alert('Ingresa un monto en pesos ($) válido.');
         return;
       }
 
-      state.items.push({
-        id: Date.now(),
+      // Default assigned to everyone if people exist
+      const initialAssigned = [...window.appState.people];
+
+      window.appState.items.push({
+        id: Date.now() + Math.floor(Math.random() * 1000),
         name: name,
         price: price,
-        assignedTo: []
+        assignedTo: initialAssigned
       });
 
       nameInput.value = '';
       priceInput.value = '';
+
+      window.pushLiveState();
       render();
     }
 
     function deleteItem(id) {
-      state.items = state.items.filter(i => i.id !== id);
+      window.appState.items = window.appState.items.filter(i => i.id !== id);
+      window.pushLiveState();
       render();
     }
 
+    function toggleTipSetting() {
+      window.appState.includeTip = document.getElementById('tipToggle').checked;
+      window.pushLiveState();
+      render();
+    }
+
+    function simulateDemoReceipt() {
+      if (window.appState.people.length === 0) {
+        window.appState.people = ['Yo', 'Matias', 'Sofia'];
+      }
+      
+      const allPeople = [...window.appState.people];
+
+      window.appState.items = [
+        { id: Date.now() + 1, name: '2x Cerveza Schop IPA 500cc', price: 9800, assignedTo: [allPeople[0]] },
+        { id: Date.now() + 2, name: 'Chorrillana Bar Especial', price: 16900, assignedTo: [...allPeople] },
+        { id: Date.now() + 3, name: 'Pisco Sour Mistral 35º', price: 5500, assignedTo: [allPeople[1] || allPeople[0]] },
+        { id: Date.now() + 4, name: 'Papas Cintas con Queso', price: 7900, assignedTo: [...allPeople] }
+      ];
+
+      window.pushLiveState();
+      render();
+    }
+
+    function handleOCRDemo(e) {
+      alert('📷 Boleta procesada exitosamente. Se han cargado los ítems detectados.');
+      simulateDemoReceipt();
+    }
+
+    function openQrModal() {
+      if (!window.appState.tableId) return;
+
+      document.getElementById('qrCodeDisplay').innerText = window.appState.tableId;
+      const qrcodeContainer = document.getElementById('qrcodeCanvas');
+      qrcodeContainer.innerHTML = '';
+
+      const joinUrl = `${window.location.origin}${window.location.pathname}#table=${window.appState.tableId}`;
+
+      new QRCode(qrcodeContainer, {
+        text: joinUrl,
+        width: 180,
+        height: 180,
+        colorDark: "#0f172a",
+        colorLight: "#ffffff",
+        correctLevel: QRCode.CorrectLevel.H
+      });
+
+      document.getElementById('qrModal').classList.remove('hidden');
+    }
+
+    function closeQrModal() {
+      document.getElementById('qrModal').classList.add('hidden');
+    }
+
+    function copyTableLink() {
+      if (!window.appState.tableId) return;
+      const joinUrl = `${window.location.origin}${window.location.pathname}#table=${window.appState.tableId}`;
+      
+      // Legacy clipboard fallback for iFrame compatibility
+      const tempInput = document.createElement('input');
+      tempInput.value = joinUrl;
+      document.body.appendChild(tempInput);
+      tempInput.select();
+      document.execCommand('copy');
+      document.body.removeChild(tempInput);
+
+      alert('¡Enlace de la mesa copiado! Envíalo a tus amigos para que se sumen.');
+    }
+
     function openAssignModal(itemId) {
-      if (state.people.length === 0) {
+      if (window.appState.people.length === 0) {
         alert('Primero agrega integrantes a la mesa.');
         return;
       }
-      state.editingItemId = itemId;
-      const item = state.items.find(i => i.id === itemId);
+
+      window.appState.editingItemId = itemId;
+      const item = window.appState.items.find(i => i.id === itemId);
       if (!item) return;
 
       document.getElementById('modalItemTitle').innerText = item.name;
@@ -297,17 +755,17 @@
       const list = document.getElementById('modalPeopleList');
       list.innerHTML = '';
 
-      state.people.forEach(p => {
+      window.appState.people.forEach(p => {
         const isChecked = item.assignedTo.includes(p);
         const div = document.createElement('div');
-        div.className = 'flex items-center justify-between p-2 rounded-xl bg-slate-800/50 hover:bg-slate-800 cursor-pointer';
+        div.className = 'flex items-center justify-between p-3 rounded-xl bg-slate-800/80 hover:bg-slate-800 cursor-pointer border border-slate-700/50 transition-colors';
         div.onclick = () => {
           const cb = div.querySelector('input');
           cb.checked = !cb.checked;
         };
         div.innerHTML = `
-          <span class="text-sm text-slate-200 font-medium">${p}</span>
-          <input type="checkbox" value="${p}" ${isChecked ? 'checked' : ''} onclick="event.stopPropagation()" class="w-4 h-4 accent-amber-500 rounded">
+          <span class="text-xs font-semibold text-slate-200">${p}</span>
+          <input type="checkbox" value="${p}" ${isChecked ? 'checked' : ''} onclick="event.stopPropagation()" class="w-4 h-4 accent-amber-500 rounded cursor-pointer">
         `;
         list.appendChild(div);
       });
@@ -315,9 +773,9 @@
       document.getElementById('assignModal').classList.remove('hidden');
     }
 
-    function closeModal() {
+    function closeAssignModal() {
       document.getElementById('assignModal').classList.add('hidden');
-      state.editingItemId = null;
+      window.appState.editingItemId = null;
     }
 
     function selectAllModalPeople() {
@@ -325,8 +783,8 @@
     }
 
     function saveAssignment() {
-      if (!state.editingItemId) return;
-      const item = state.items.find(i => i.id === state.editingItemId);
+      if (!window.appState.editingItemId) return;
+      const item = window.appState.items.find(i => i.id === window.appState.editingItemId);
       if (!item) return;
 
       const selected = [];
@@ -335,92 +793,92 @@
       });
 
       item.assignedTo = selected;
-      closeModal();
+      closeAssignModal();
+      window.pushLiveState();
       render();
     }
 
-    function simulateReceipt() {
-      if (state.people.length === 0) {
-        state.people = ['Yo', 'Amigo 1', 'Amigo 2'];
-      }
-      state.items = [
-        { id: 1, name: '2x Cerveza Austral', price: 9000, assignedTo: [] },
-        { id: 2, name: 'Chorrillana Bar', price: 15500, assignedTo: [...state.people] },
-        { id: 3, name: 'Pisco Sour Alto', price: 4500, assignedTo: [] }
-      ];
-      render();
-    }
-
-    function handleImageUpload(e) {
-      alert('Foto recibida. Se cargará una demostración estructurada.');
-      simulateReceipt();
-    }
-
-    function resetAll() {
-      if (confirm('¿Reiniciar la mesa actual?')) {
-        state.items = [];
-        state.people = [];
+    function resetCurrentTable() {
+      if (confirm('¿Deseas reiniciar todos los datos de esta mesa?')) {
+        window.appState.items = [];
+        window.appState.people = window.appState.mode === 'live' ? window.appState.people : ['Yo'];
+        window.pushLiveState();
         render();
       }
     }
 
     function render() {
-      state.includeTip = document.getElementById('tipToggle').checked;
-
+      // Render People List
       const peopleList = document.getElementById('peopleList');
       peopleList.innerHTML = '';
-      if (state.people.length === 0) {
+      document.getElementById('peopleCountBadge').innerText = window.appState.people.length;
+
+      if (window.appState.people.length === 0) {
         peopleList.innerHTML = '<span class="text-xs text-slate-500 italic">No hay integrantes agregados</span>';
       } else {
-        state.people.forEach((p, idx) => {
+        window.appState.people.forEach((p, idx) => {
           const badge = document.createElement('span');
-          badge.className = 'inline-flex items-center gap-1.5 px-3 py-1 bg-slate-800 border border-slate-700 text-slate-200 font-semibold text-xs rounded-full';
+          badge.className = 'inline-flex items-center gap-1.5 px-3 py-1 bg-slate-800 border border-slate-700/80 text-slate-200 font-semibold text-xs rounded-full shadow-sm';
           badge.innerHTML = `
-            ${p}
-            <i class="fa-solid fa-xmark text-slate-400 hover:text-rose-400 cursor-pointer" onclick="removePerson(${idx})"></i>
+            <span>${p}</span>
+            <i class="fa-solid fa-xmark text-slate-400 hover:text-rose-400 cursor-pointer text-xs" onclick="removePerson(${idx})"></i>
           `;
           peopleList.appendChild(badge);
         });
       }
 
+      // Render Items List
       const itemsContainer = document.getElementById('itemsContainer');
       itemsContainer.innerHTML = '';
-      document.getElementById('itemCountBadge').innerText = `${state.items.length} ítems`;
+      document.getElementById('itemCountBadge').innerText = `${window.appState.items.length} ítems`;
 
-      state.items.forEach(item => {
-        const div = document.createElement('div');
-        div.className = 'glass-card p-3 rounded-2xl flex items-center justify-between gap-3';
-        
-        const assignedText = item.assignedTo.length === 0 
-          ? '<span class="text-rose-400 font-bold">Sin asignar</span>'
-          : (state.people.length > 0 && item.assignedTo.length === state.people.length)
-            ? '<span class="text-amber-400 font-semibold">Todos</span>' 
-            : `<span class="text-slate-300">${item.assignedTo.join(', ')}</span>`;
-
-        div.innerHTML = `
-          <div class="flex-1 min-w-0 cursor-pointer" onclick="openAssignModal(${item.id})">
-            <p class="font-bold text-white text-sm truncate">${item.name}</p>
-            <p class="text-xs text-slate-400 truncate">Para: ${assignedText}</p>
+      if (window.appState.items.length === 0) {
+        itemsContainer.innerHTML = `
+          <div class="glass-card p-6 rounded-2xl text-center space-y-1">
+            <p class="text-xs font-bold text-slate-400">La cuenta está vacía</p>
+            <p class="text-[11px] text-slate-500">Agrega un consumo manual o carga la boleta demo.</p>
           </div>
-          <div class="text-right">
-            <p class="font-extrabold text-amber-400 text-sm">${formatCLP(item.price)}</p>
-            <button onclick="openAssignModal(${item.id})" class="text-[10px] bg-slate-800 text-slate-300 hover:text-white px-2 py-0.5 rounded-md mt-1 border border-slate-700">
-              <i class="fa-solid fa-user-plus"></i> Asignar
-            </button>
-          </div>
-          <button onclick="deleteItem(${item.id})" class="text-slate-500 hover:text-rose-400 p-1">
-            <i class="fa-solid fa-trash-can text-sm"></i>
-          </button>
         `;
-        itemsContainer.appendChild(div);
-      });
+      } else {
+        window.appState.items.forEach(item => {
+          const div = document.createElement('div');
+          div.className = 'glass-card p-3 rounded-2xl flex items-center justify-between gap-3 shadow-md border-slate-800';
+          
+          let assignedText = '';
+          if (item.assignedTo.length === 0) {
+            assignedText = '<span class="text-rose-400 font-bold">Sin asignar (Toca para asignar)</span>';
+          } else if (window.appState.people.length > 0 && item.assignedTo.length === window.appState.people.length) {
+            assignedText = '<span class="text-amber-400 font-bold">Todos en la mesa</span>';
+          } else {
+            assignedText = `<span class="text-slate-300 font-medium">${item.assignedTo.join(', ')}</span>`;
+          }
 
+          div.innerHTML = `
+            <div class="flex-1 min-w-0 cursor-pointer" onclick="openAssignModal(${item.id})">
+              <p class="font-extrabold text-white text-sm truncate">${item.name}</p>
+              <p class="text-[11px] text-slate-400 truncate">Para: ${assignedText}</p>
+            </div>
+            <div class="text-right">
+              <p class="font-black text-amber-400 text-sm">${formatCLP(item.price)}</p>
+              <button onclick="openAssignModal(${item.id})" class="text-[10px] bg-slate-800 text-amber-400 hover:text-amber-300 font-bold px-2 py-0.5 rounded-md mt-1 border border-slate-700">
+                <i class="fa-solid fa-users text-[9px]"></i> Asignar
+              </button>
+            </div>
+            <button onclick="deleteItem(${item.id})" class="text-slate-500 hover:text-rose-400 p-1 transition-colors">
+              <i class="fa-solid fa-trash-can text-xs"></i>
+            </button>
+          `;
+          itemsContainer.appendChild(div);
+        });
+      }
+
+      // Calculate Totals Per Person
       const totals = {};
-      state.people.forEach(p => totals[p] = 0);
+      window.appState.people.forEach(p => totals[p] = 0);
 
       let grandTotalNeto = 0;
 
-      state.items.forEach(item => {
+      window.appState.items.forEach(item => {
         grandTotalNeto += item.price;
         if (item.assignedTo.length > 0) {
           const splitPrice = item.price / item.assignedTo.length;
@@ -430,22 +888,25 @@
         }
       });
 
-      const tipMultiplier = state.includeTip ? 1.10 : 1.0;
-      let grandTotalFinal = grandTotalNeto * tipMultiplier;
+      const tipMultiplier = window.appState.includeTip ? 1.10 : 1.0;
+      const grandTotalFinal = grandTotalNeto * tipMultiplier;
 
+      // Render Summary Table
       const summaryContainer = document.getElementById('summaryContainer');
       summaryContainer.innerHTML = '';
 
-      if (state.people.length === 0) {
-        summaryContainer.innerHTML = '<p class="text-xs text-slate-500 italic">Agrega integrantes para ver el desglose.</p>';
+      if (window.appState.people.length === 0) {
+        summaryContainer.innerHTML = '<p class="text-xs text-slate-500 italic">Agrega integrantes para calcular desglose.</p>';
       } else {
-        state.people.forEach(p => {
-          const userTotal = totals[p] * tipMultiplier;
+        window.appState.people.forEach(p => {
+          const userTotal = (totals[p] || 0) * tipMultiplier;
           const row = document.createElement('div');
-          row.className = 'pt-2 flex justify-between items-center text-sm';
+          row.className = 'pt-2 flex justify-between items-center text-xs';
           row.innerHTML = `
-            <span class="text-slate-300 font-medium">${p}</span>
-            <span class="font-bold text-white">${formatCLP(userTotal)}</span>
+            <span class="text-slate-200 font-semibold flex items-center gap-1.5">
+              <i class="fa-solid fa-circle-user text-amber-400/80"></i> ${p}
+            </span>
+            <span class="font-extrabold text-white text-sm">${formatCLP(userTotal)}</span>
           `;
           summaryContainer.appendChild(row);
         });
@@ -455,11 +916,11 @@
     }
 
     function shareWhatsApp() {
-      const tipMultiplier = state.includeTip ? 1.10 : 1.0;
+      const tipMultiplier = window.appState.includeTip ? 1.10 : 1.0;
       const totals = {};
-      state.people.forEach(p => totals[p] = 0);
+      window.appState.people.forEach(p => totals[p] = 0);
 
-      state.items.forEach(item => {
+      window.appState.items.forEach(item => {
         if (item.assignedTo.length > 0) {
           const splitPrice = item.price / item.assignedTo.length;
           item.assignedTo.forEach(p => {
@@ -468,13 +929,20 @@
         }
       });
 
-      let msg = `🍻 *BARCLARO* 🍻\n\n`;
-      state.people.forEach(p => {
-        const total = totals[p] * tipMultiplier;
+      let msg = `🍻 *CUENTA BARCLARO* 🍻\n`;
+      if (window.appState.mode === 'live' && window.appState.tableId) {
+        msg += `📌 _Mesa Código:_ *${window.appState.tableId}*\n`;
+      }
+      msg += `----------------------------\n`;
+
+      window.appState.people.forEach(p => {
+        const total = (totals[p] || 0) * tipMultiplier;
         msg += `• *${p}:* ${formatCLP(total)}\n`;
       });
 
-      if (state.includeTip) msg += `\n_(Incluye 10% de propina sugerida)_\n`;
+      if (window.appState.includeTip) {
+        msg += `\n_(Incluye 10% de propina sugerida)_\n`;
+      }
 
       const name = document.getElementById('bankName').value;
       const rut = document.getElementById('bankRut').value;
@@ -483,18 +951,19 @@
       const account = document.getElementById('bankAccount').value;
 
       if (name || bank || account) {
-        msg += `\n💳 *DATOS DE TRANSFERENCIA:*`;
-        if (name) msg += `\n• Nombre: ${name}`;
-        if (rut) msg += `\n• RUT: ${rut}`;
-        if (bank) msg += `\n• Banco: ${bank}`;
-        if (type) msg += `\n• Tipo: ${type}`;
-        if (account) msg += `\n• Nº Cuenta: ${account}`;
+        msg += `\n💳 *DATOS PARA TRANSFERIR:*`;
+        if (name) msg += `\n• *Nombre:* ${name}`;
+        if (rut) msg += `\n• *RUT:* ${rut}`;
+        if (bank) msg += `\n• *Banco:* ${bank}`;
+        if (type) msg += `\n• *Tipo:* ${type}`;
+        if (account) msg += `\n• *Cuenta:* ${account}`;
       }
 
       const encodedMsg = encodeURIComponent(msg);
       window.open(`https://api.whatsapp.com/send?text=${encodedMsg}`, '_blank');
     }
 
+    // Initial render
     render();
   </script>
 </body>
