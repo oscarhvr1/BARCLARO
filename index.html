@@ -7,8 +7,8 @@
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
-  <!-- Motor OCR Tesseract -->
-  <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
+  <!-- Motor OCR Tesseract v4 estable -->
+  <script src="https://cdn.jsdelivr.net/npm/tesseract.js@4/dist/tesseract.min.js"></script>
   <style>
     @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
     
@@ -48,7 +48,7 @@
 </head>
 <body class="min-h-screen w-full flex flex-col bg-slate-900 text-slate-100 antialiased">
 
-  <!-- BANNER DE NOTIFICACIONES TOAST (Reemplazo de alertas nativas) -->
+  <!-- BANNER DE NOTIFICACIONES TOAST -->
   <div id="toast" class="fixed top-4 left-1/2 -translate-x-1/2 z-50 hidden transition-all transform duration-300 w-[90%] max-w-sm">
     <div id="toastContent" class="glass-card p-4 rounded-2xl shadow-2xl flex items-center gap-3 border border-amber-500/30 text-amber-300 font-bold text-sm">
       <i id="toastIcon" class="fa-solid fa-circle-info text-lg"></i>
@@ -155,7 +155,7 @@
             <i class="fa-solid fa-spinner animate-spin text-lg"></i>
             <span id="ocrStatusText">Procesando foto de boleta...</span>
           </div>
-          <p class="text-xs text-slate-400">Optimizando imagen y extrayendo consumos.</p>
+          <p class="text-xs text-slate-400">Analizando el texto e ítems de consumo.</p>
         </div>
 
         <!-- AGREGAR ITEM MANUAL -->
@@ -537,50 +537,7 @@
       showToast('Cargados datos de prueba');
     }
 
-    // PREProcesamiento DE IMAGEN
-    function processImageFile(file) {
-      return new Promise((resolve) => {
-        const reader = new FileReader();
-        reader.onload = (e) => {
-          const img = new Image();
-          img.onload = () => {
-            const canvas = document.createElement('canvas');
-            const MAX_WIDTH = 1600;
-            let width = img.width;
-            let height = img.height;
-
-            if (width > MAX_WIDTH) {
-              height = Math.round((height * MAX_WIDTH) / width);
-              width = MAX_WIDTH;
-            }
-
-            canvas.width = width;
-            canvas.height = height;
-
-            const ctx = canvas.getContext('2d');
-            ctx.drawImage(img, 0, 0, width, height);
-
-            // Aumento de contraste ligero
-            const imgData = ctx.getImageData(0, 0, width, height);
-            const d = imgData.data;
-            for (let i = 0; i < d.length; i += 4) {
-              let avg = (d[i] + d[i + 1] + d[i + 2]) / 3;
-              let v = avg > 120 ? 255 : 0; // Escala blanco y negro limpia
-              d[i] = v;
-              d[i + 1] = v;
-              d[i + 2] = v;
-            }
-            ctx.putImageData(imgData, 0, 0);
-
-            resolve(canvas.toDataURL('image/jpeg', 0.85));
-          };
-          img.src = e.target.result;
-        };
-        reader.readAsDataURL(file);
-      });
-    }
-
-    // MANEJADOR DE SCANNER
+    // MANEJADOR DE SCANNER ROBUSTO
     async function handleImageUpload(e) {
       const file = e.target.files[0];
       if (!file) return;
@@ -588,14 +545,12 @@
       const statusBox = document.getElementById('ocrStatus');
       const statusText = document.getElementById('ocrStatusText');
       statusBox.classList.remove('hidden');
-      statusText.innerText = 'Optimizando foto...';
+      statusText.innerText = 'Escaneando boleta...';
 
       try {
-        const optimizedImage = await processImageFile(file);
-        statusText.innerText = 'Analizando texto con OCR...';
-
+        // Inicializar Tesseract v4 en español
         const worker = await Tesseract.createWorker('spa');
-        const ret = await worker.recognize(optimizedImage);
+        const ret = await worker.recognize(file);
         await worker.terminate();
 
         const rawText = ret.data.text;
@@ -605,7 +560,7 @@
         const ignoreKeywords = [
           'cuenta', 'mesero', 'comensales', 'mesa', 'fecha', 'id', 'propina',
           'total', 'subtotal', 'sugerida', 'evaluar', 'experiencia', 'boleta',
-          'delivery', 'rut', 'bienvenido', 'gracias', 'atendido'
+          'delivery', 'rut', 'bienvenido', 'gracias', 'atendido', 'atendido por'
         ];
 
         lines.forEach(line => {
@@ -615,29 +570,18 @@
           const lower = cleanLine.toLowerCase();
           if (ignoreKeywords.some(k => lower.includes(k))) return;
 
-          // Normalizar montos (reemplaza espacios dentro de números)
-          cleanLine = cleanLine.replace(/(\d+)\s*[\.\,]\s*(\d+)/g, '$1.$2');
-
-          // Expresión regular flexible para precios chilenos
-          const match = cleanLine.match(/([^\$\d]*)\$?\s*(\d{1,3}(?:[\.\s]?\d{3})+|\d{3,5})\s*$/);
+          // Expresión regular robusta para capturar el nombre y el monto final
+          const match = cleanLine.match(/(.+?)(?:\s+[\$\#]?\s*)(\d{1,3}(?:[\.\s,]\d{3})+|\d{3,6})\s*$/);
 
           if (match) {
             let namePart = match[1].trim();
-            let rawPrice = match[2].replace(/[\.\s]/g, '');
+            let rawPrice = match[2].replace(/[\.\s,]/g, '');
             let price = parseInt(rawPrice, 10);
 
-            // Ajuste si se cortaron los miles
-            if (price < 1000 && namePart.length > 0) {
-              const lastDigit = namePart.slice(-1);
-              if (/\d/.test(lastDigit)) {
-                price = parseInt(lastDigit + rawPrice, 10);
-                namePart = namePart.slice(0, -1).trim();
-              }
-            }
+            // Limpieza básica del texto
+            namePart = namePart.replace(/^[\*\:\-\_\$\d\.\s]+/, '').replace(/[\*\:\-\_\$]/g, '').trim();
 
-            namePart = namePart.replace(/[\*\:\-\_\$]/g, '').replace(/\s+/g, ' ').trim();
-
-            if (price >= 1000 && price <= 300000 && namePart.length >= 2) {
+            if (price >= 500 && price <= 500000 && namePart.length >= 2) {
               newItemsFound.push({
                 id: Date.now() + Math.random(),
                 name: namePart,
@@ -656,13 +600,13 @@
           render();
           showToast(`¡Se extrajeron ${newItemsFound.length} ítems de la boleta!`);
         } else {
-          showToast('No se reconocieron ítems de la lista. Intenta con una foto más clara o agrega el consumo manualmente.', true);
+          showToast('No se reconocieron ítems de la lista. Intenta enfocarla mejor o agrégalos manualmente.', true);
         }
 
       } catch (err) {
         statusBox.classList.add('hidden');
         console.error(err);
-        showToast('Error procesando la imagen. Revisa los permisos del navegador.', true);
+        showToast('Error al procesar la imagen.', true);
       }
     }
 
