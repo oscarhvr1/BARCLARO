@@ -7,6 +7,8 @@
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+  <!-- Motor OCR para lectura de imágenes -->
+  <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.min.js"></script>
   <style>
     @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
     
@@ -39,7 +41,6 @@
       border: 1px solid rgba(255, 255, 255, 0.08);
     }
 
-    /* Previene el zoom en inputs al tocar en iPhone/Android */
     input, textarea, select, button {
       font-size: 16px !important;
     }
@@ -139,6 +140,15 @@
             <input type="file" accept="image/*" class="hidden" onchange="handleImageUpload(event)">
           </label>
         </section>
+
+        <!-- ESTADO LECTURA OCR (OCULTO POR DEFECTO) -->
+        <div id="ocrStatus" class="hidden glass-card p-4 rounded-2xl border-amber-500/30 space-y-2 text-center">
+          <div class="flex items-center justify-center gap-2 text-amber-400 font-bold text-sm">
+            <i class="fa-solid fa-spinner animate-spin text-lg"></i>
+            <span id="ocrStatusText">Procesando foto de boleta...</span>
+          </div>
+          <p class="text-xs text-slate-400">Analizando productos y precios de la imagen.</p>
+        </div>
 
         <!-- AGREGAR ITEM MANUAL -->
         <section class="glass-card p-4 rounded-2xl space-y-3 w-full">
@@ -490,17 +500,77 @@
         state.people = ['Yo', 'Amigo 1', 'Amigo 2'];
       }
       state.items = [
-        { id: 1, name: '2x Cerveza Austral', price: 9000, assignedTo: [] },
-        { id: 2, name: 'Chorrillana Bar', price: 15500, assignedTo: [...state.people] },
-        { id: 3, name: 'Pisco Sour Alto', price: 4500, assignedTo: [] }
+        { id: Date.now() + 1, name: '2x Cerveza Austral', price: 9000, assignedTo: [] },
+        { id: Date.now() + 2, name: 'Chorrillana Bar', price: 15500, assignedTo: [...state.people] },
+        { id: Date.now() + 3, name: 'Pisco Sour Alto', price: 4500, assignedTo: [] }
       ];
       syncToCloud();
       render();
     }
 
-    function handleImageUpload(e) {
-      alert('Boleta recibida. Se cargará el desglose estructurado.');
-      simulateReceipt();
+    // PROCESAMIENTO REAL DE IMAGEN CON OCR (Tesseract.js)
+    async function handleImageUpload(e) {
+      const file = e.target.files[0];
+      if (!file) return;
+
+      const statusBox = document.getElementById('ocrStatus');
+      const statusText = document.getElementById('ocrStatusText');
+      statusBox.classList.remove('hidden');
+      statusText.innerText = 'Analizando foto de la boleta...';
+
+      try {
+        const worker = await Tesseract.createWorker('spa');
+        const ret = await worker.recognize(file);
+        await worker.terminate();
+
+        const text = ret.data.text;
+        const lines = text.split('\n');
+        let newItemsFound = [];
+
+        lines.forEach(line => {
+          const cleanLine = line.trim();
+          if (!cleanLine) return;
+
+          // Buscar patrones de números al final de la línea (precios)
+          const priceMatch = cleanLine.match(/(\d[\d\.\,]{2,})/);
+          if (priceMatch) {
+            let rawPrice = priceMatch[0].replace(/\./g, '').replace(/,/g, '');
+            let price = parseInt(rawPrice, 10);
+
+            // Filtrar subtotales, IVA o totales
+            const lowerLine = cleanLine.toLowerCase();
+            const isTotal = lowerLine.includes('total') || lowerLine.includes('subtotal') || lowerLine.includes('propina') || lowerLine.includes('iva');
+
+            if (price && price > 500 && price < 500000 && !isTotal) {
+              let itemName = cleanLine.replace(priceMatch[0], '').replace(/[\$\*\:\-]/g, '').trim();
+              if (itemName.length > 2) {
+                newItemsFound.push({
+                  id: Date.now() + Math.random(),
+                  name: itemName,
+                  price: price,
+                  assignedTo: []
+                });
+              }
+            }
+          }
+        });
+
+        statusBox.classList.add('hidden');
+
+        if (newItemsFound.length > 0) {
+          state.items = [...state.items, ...newItemsFound];
+          syncToCloud();
+          render();
+          alert(`¡Se leyeron ${newItemsFound.length} consumo(s) de la boleta!`);
+        } else {
+          alert('No pudimos detectar precios claros en la imagen. Intenta tomar la foto con más luz y enfocada, o agrega los consumos manualmente.');
+        }
+
+      } catch (err) {
+        statusBox.classList.add('hidden');
+        console.error(err);
+        alert('Ocurrió un error al procesar la imagen. Intenta de nuevo.');
+      }
     }
 
     function resetAll() {
