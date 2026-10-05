@@ -7,7 +7,7 @@
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
-  <!-- Motor OCR para lectura de imágenes -->
+  <!-- Motor OCR Tesseract -->
   <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.min.js"></script>
   <style>
     @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
@@ -510,7 +510,7 @@
       render();
     }
 
-    // PROCESAMIENTO REVISADO DE BOLETAS IMPRESAS Y TÉRMICAS
+    // PARSER MEJORADO Y AUTO-CORRECTIVO DE BOLETAS
     async function handleImageUpload(e) {
       const file = e.target.files[0];
       if (!file) return;
@@ -518,23 +518,18 @@
       const statusBox = document.getElementById('ocrStatus');
       const statusText = document.getElementById('ocrStatusText');
       statusBox.classList.remove('hidden');
-      statusText.innerText = 'Analizando foto de la boleta...';
+      statusText.innerText = 'Escaneando boleta...';
 
       try {
         const worker = await Tesseract.createWorker('spa');
         
-        await worker.setParameters({
-          tessedit_char_whitelist: '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZáéíóúÁÉÍÓÚ$.,-:/# ',
-        });
-
         const ret = await worker.recognize(file);
         await worker.terminate();
 
-        const text = ret.data.text;
-        const lines = text.split('\n');
+        const rawText = ret.data.text;
+        const lines = rawText.split('\n');
         let newItemsFound = [];
 
-        // Lista de palabras a ignorar por ser cabecera o pie de cuenta
         const ignoreKeywords = [
           'cuenta', 'mesero', 'comensales', 'mesa', 'fecha', 'id',
           'total', 'subtotal', 'propina', 'sugerida', 'evaluar', 'experiencia',
@@ -547,35 +542,42 @@
 
           const lowerLine = cleanLine.toLowerCase();
 
-          // Descartar si coincide con encabezados o datos administrativos
+          // Filtrar metadatos o totales
           const isMetadata = ignoreKeywords.some(keyword => lowerLine.includes(keyword));
           if (isMetadata) return;
 
-          // Buscar el monto al FINAL de la línea (e.g. $5.500, $8.500, 9.000, 3900)
-          // Soporta signos $, puntos, comillas y espacios al medio
-          const priceMatch = cleanLine.match(/(?:\$?\s*)(\d{1,3}(?:[\.,\s]?\d{3})+|\d{3,6})(?=[^\d]*$)/);
+          // Normalizar espacios alrededor de puntos en montos (ej: "5 . 500" -> "5.500")
+          cleanLine = cleanLine.replace(/(\d+)\s*[\.\,]\s*(\d+)/g, '$1.$2');
 
-          if (priceMatch) {
-            // Extraer sólo los números
-            let rawPriceStr = priceMatch[1].replace(/[\.,\s]/g, '');
-            let price = parseInt(rawPriceStr, 10);
+          // Expresión regular para capturar precios en formato chileno
+          // Ej: $5.500, $8.500, $9.000, 3.900, 5500, 3900
+          const match = cleanLine.match(/([^\$\d]*)\$?\s*(\d{1,3}(?:[\.\s]?\d{3})+|\d{3,5})\s*$/);
 
-            // Validar que el precio esté en un rango razonable de consumo individual/grupo
-            if (price && price >= 1000 && price <= 300000) {
-              // Cortar el nombre del producto quitando el bloque del precio extraído
-              let itemName = cleanLine.substring(0, priceMatch.index)
-                                      .replace(/[\*\:\-\_\$]/g, '')
-                                      .replace(/\s+/g, ' ')
-                                      .trim();
+          if (match) {
+            let namePart = match[1].trim();
+            let rawPrice = match[2].replace(/[\.\s]/g, '');
+            let price = parseInt(rawPrice, 10);
 
-              if (itemName.length >= 2) {
-                newItemsFound.push({
-                  id: Date.now() + Math.random(),
-                  name: itemName,
-                  price: price,
-                  assignedTo: []
-                });
+            // CORRECCIÓN AUTOMÁTICA: Si el precio dio < 1000 (ej: 500 ó 900),
+            // se comprueba si el último caracter del nombre era el dígito de los miles (ej: "Schop... 5")
+            if (price < 1000 && namePart.length > 0) {
+              const lastChar = namePart.slice(-1);
+              if (/\d/.test(lastChar)) {
+                price = parseInt(lastChar + rawPrice, 10);
+                namePart = namePart.slice(0, -1).trim();
               }
+            }
+
+            // Normalizar el nombre borrando símbolos residuales
+            namePart = namePart.replace(/[\*\:\-\_\$]/g, '').replace(/\s+/g, ' ').trim();
+
+            if (price >= 1000 && price <= 300000 && namePart.length >= 2) {
+              newItemsFound.push({
+                id: Date.now() + Math.random(),
+                name: namePart,
+                price: price,
+                assignedTo: []
+              });
             }
           }
         });
@@ -586,15 +588,15 @@
           state.items = [...state.items, ...newItemsFound];
           syncToCloud();
           render();
-          alert(`¡Se detectaron ${newItemsFound.length} consumo(s) de la boleta!`);
+          alert(`¡Se detectaron ${newItemsFound.length} consumos correctamente!`);
         } else {
-          alert('No pudimos extraer los ítems. Intenta enfocar la lista de consumos con buena luz.');
+          alert('No se pudieron leer los ítems. Asegúrate de encuadrar bien la lista de productos.');
         }
 
       } catch (err) {
         statusBox.classList.add('hidden');
         console.error(err);
-        alert('Ocurrió un error al procesar la imagen. Intenta de nuevo.');
+        alert('Error al procesar la imagen. Intenta nuevamente.');
       }
     }
 
