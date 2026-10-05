@@ -8,7 +8,7 @@
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
   <!-- Motor OCR Tesseract -->
-  <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
   <style>
     @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
     
@@ -47,6 +47,14 @@
   </style>
 </head>
 <body class="min-h-screen w-full flex flex-col bg-slate-900 text-slate-100 antialiased">
+
+  <!-- BANNER DE NOTIFICACIONES TOAST (Reemplazo de alertas nativas) -->
+  <div id="toast" class="fixed top-4 left-1/2 -translate-x-1/2 z-50 hidden transition-all transform duration-300 w-[90%] max-w-sm">
+    <div id="toastContent" class="glass-card p-4 rounded-2xl shadow-2xl flex items-center gap-3 border border-amber-500/30 text-amber-300 font-bold text-sm">
+      <i id="toastIcon" class="fa-solid fa-circle-info text-lg"></i>
+      <span id="toastText" class="flex-1 text-slate-100"></span>
+    </div>
+  </div>
 
   <div id="app" class="w-full min-h-screen flex flex-col flex-1 pb-10">
 
@@ -147,7 +155,7 @@
             <i class="fa-solid fa-spinner animate-spin text-lg"></i>
             <span id="ocrStatusText">Procesando foto de boleta...</span>
           </div>
-          <p class="text-xs text-slate-400">Analizando productos y precios de la imagen.</p>
+          <p class="text-xs text-slate-400">Optimizando imagen y extrayendo consumos.</p>
         </div>
 
         <!-- AGREGAR ITEM MANUAL -->
@@ -292,6 +300,24 @@
       }
     });
 
+    function showToast(message, isError = false) {
+      const toast = document.getElementById('toast');
+      const toastText = document.getElementById('toastText');
+      const toastIcon = document.getElementById('toastIcon');
+      
+      toastText.innerText = message;
+      if (isError) {
+        toastIcon.className = "fa-solid fa-circle-exclamation text-rose-400 text-lg";
+      } else {
+        toastIcon.className = "fa-solid fa-circle-check text-emerald-400 text-lg";
+      }
+      
+      toast.classList.remove('hidden');
+      setTimeout(() => {
+        toast.classList.add('hidden');
+      }, 4000);
+    }
+
     function saveBankData() {
       const bankData = {
         name: document.getElementById('bankName').value,
@@ -408,7 +434,7 @@
       const price = parseFloat(priceInput.value);
 
       if (!price || price <= 0) {
-        alert('Ingresa un monto válido.');
+        showToast('Ingresa un monto válido.', true);
         return;
       }
 
@@ -439,7 +465,7 @@
 
     function openAssignModal(itemId) {
       if (state.people.length === 0) {
-        alert('Primero agrega integrantes a la mesa.');
+        showToast('Agrega al menos un integrante a la mesa.', true);
         return;
       }
       state.editingItemId = itemId;
@@ -508,9 +534,53 @@
       ];
       syncToCloud();
       render();
+      showToast('Cargados datos de prueba');
     }
 
-    // PARSER MEJORADO Y AUTO-CORRECTIVO DE BOLETAS
+    // PREProcesamiento DE IMAGEN
+    function processImageFile(file) {
+      return new Promise((resolve) => {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          const img = new Image();
+          img.onload = () => {
+            const canvas = document.createElement('canvas');
+            const MAX_WIDTH = 1600;
+            let width = img.width;
+            let height = img.height;
+
+            if (width > MAX_WIDTH) {
+              height = Math.round((height * MAX_WIDTH) / width);
+              width = MAX_WIDTH;
+            }
+
+            canvas.width = width;
+            canvas.height = height;
+
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(img, 0, 0, width, height);
+
+            // Aumento de contraste ligero
+            const imgData = ctx.getImageData(0, 0, width, height);
+            const d = imgData.data;
+            for (let i = 0; i < d.length; i += 4) {
+              let avg = (d[i] + d[i + 1] + d[i + 2]) / 3;
+              let v = avg > 120 ? 255 : 0; // Escala blanco y negro limpia
+              d[i] = v;
+              d[i + 1] = v;
+              d[i + 2] = v;
+            }
+            ctx.putImageData(imgData, 0, 0);
+
+            resolve(canvas.toDataURL('image/jpeg', 0.85));
+          };
+          img.src = e.target.result;
+        };
+        reader.readAsDataURL(file);
+      });
+    }
+
+    // MANEJADOR DE SCANNER
     async function handleImageUpload(e) {
       const file = e.target.files[0];
       if (!file) return;
@@ -518,12 +588,14 @@
       const statusBox = document.getElementById('ocrStatus');
       const statusText = document.getElementById('ocrStatusText');
       statusBox.classList.remove('hidden');
-      statusText.innerText = 'Escaneando boleta...';
+      statusText.innerText = 'Optimizando foto...';
 
       try {
+        const optimizedImage = await processImageFile(file);
+        statusText.innerText = 'Analizando texto con OCR...';
+
         const worker = await Tesseract.createWorker('spa');
-        
-        const ret = await worker.recognize(file);
+        const ret = await worker.recognize(optimizedImage);
         await worker.terminate();
 
         const rawText = ret.data.text;
@@ -531,26 +603,22 @@
         let newItemsFound = [];
 
         const ignoreKeywords = [
-          'cuenta', 'mesero', 'comensales', 'mesa', 'fecha', 'id',
-          'total', 'subtotal', 'propina', 'sugerida', 'evaluar', 'experiencia',
-          'boleta', 'escaneando', 'delivery', 'dublin', 'rut', 'bienvenido'
+          'cuenta', 'mesero', 'comensales', 'mesa', 'fecha', 'id', 'propina',
+          'total', 'subtotal', 'sugerida', 'evaluar', 'experiencia', 'boleta',
+          'delivery', 'rut', 'bienvenido', 'gracias', 'atendido'
         ];
 
         lines.forEach(line => {
           let cleanLine = line.trim();
-          if (!cleanLine) return;
+          if (!cleanLine || cleanLine.length < 3) return;
 
-          const lowerLine = cleanLine.toLowerCase();
+          const lower = cleanLine.toLowerCase();
+          if (ignoreKeywords.some(k => lower.includes(k))) return;
 
-          // Filtrar metadatos o totales
-          const isMetadata = ignoreKeywords.some(keyword => lowerLine.includes(keyword));
-          if (isMetadata) return;
-
-          // Normalizar espacios alrededor de puntos en montos (ej: "5 . 500" -> "5.500")
+          // Normalizar montos (reemplaza espacios dentro de números)
           cleanLine = cleanLine.replace(/(\d+)\s*[\.\,]\s*(\d+)/g, '$1.$2');
 
-          // Expresión regular para capturar precios en formato chileno
-          // Ej: $5.500, $8.500, $9.000, 3.900, 5500, 3900
+          // Expresión regular flexible para precios chilenos
           const match = cleanLine.match(/([^\$\d]*)\$?\s*(\d{1,3}(?:[\.\s]?\d{3})+|\d{3,5})\s*$/);
 
           if (match) {
@@ -558,17 +626,15 @@
             let rawPrice = match[2].replace(/[\.\s]/g, '');
             let price = parseInt(rawPrice, 10);
 
-            // CORRECCIÓN AUTOMÁTICA: Si el precio dio < 1000 (ej: 500 ó 900),
-            // se comprueba si el último caracter del nombre era el dígito de los miles (ej: "Schop... 5")
+            // Ajuste si se cortaron los miles
             if (price < 1000 && namePart.length > 0) {
-              const lastChar = namePart.slice(-1);
-              if (/\d/.test(lastChar)) {
-                price = parseInt(lastChar + rawPrice, 10);
+              const lastDigit = namePart.slice(-1);
+              if (/\d/.test(lastDigit)) {
+                price = parseInt(lastDigit + rawPrice, 10);
                 namePart = namePart.slice(0, -1).trim();
               }
             }
 
-            // Normalizar el nombre borrando símbolos residuales
             namePart = namePart.replace(/[\*\:\-\_\$]/g, '').replace(/\s+/g, ' ').trim();
 
             if (price >= 1000 && price <= 300000 && namePart.length >= 2) {
@@ -588,15 +654,15 @@
           state.items = [...state.items, ...newItemsFound];
           syncToCloud();
           render();
-          alert(`¡Se detectaron ${newItemsFound.length} consumos correctamente!`);
+          showToast(`¡Se extrajeron ${newItemsFound.length} ítems de la boleta!`);
         } else {
-          alert('No se pudieron leer los ítems. Asegúrate de encuadrar bien la lista de productos.');
+          showToast('No se reconocieron ítems de la lista. Intenta con una foto más clara o agrega el consumo manualmente.', true);
         }
 
       } catch (err) {
         statusBox.classList.add('hidden');
         console.error(err);
-        alert('Error al procesar la imagen. Intenta nuevamente.');
+        showToast('Error procesando la imagen. Revisa los permisos del navegador.', true);
       }
     }
 
@@ -606,13 +672,14 @@
         state.people = [];
         syncToCloud();
         render();
+        showToast('Mesa reiniciada');
       }
     }
 
     function copyShareLink() {
       const shareUrl = window.location.href;
       navigator.clipboard.writeText(shareUrl).then(() => {
-        alert('¡Link copiado! Envíalo al grupo de WhatsApp.');
+        showToast('¡Link copiado al portapapeles!');
       }).catch(() => {
         prompt('Copia este link:', shareUrl);
       });
