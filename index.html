@@ -508,7 +508,7 @@
       render();
     }
 
-    // PROCESAMIENTO REAL DE IMAGEN CON OCR (Tesseract.js)
+    // PROCESAMIENTO OPTIMIZADO DE IMAGEN CON OCR (Tesseract.js)
     async function handleImageUpload(e) {
       const file = e.target.files[0];
       if (!file) return;
@@ -520,6 +520,12 @@
 
       try {
         const worker = await Tesseract.createWorker('spa');
+        
+        // Ajuste para priorizar dígitos y texto habitual de boletas
+        await worker.setParameters({
+          tessedit_char_whitelist: '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZáéíóúÁÉÍÓÚ$.,-:/xX ',
+        });
+
         const ret = await worker.recognize(file);
         await worker.terminate();
 
@@ -528,29 +534,43 @@
         let newItemsFound = [];
 
         lines.forEach(line => {
-          const cleanLine = line.trim();
+          let cleanLine = line.trim();
           if (!cleanLine) return;
 
-          // Buscar patrones de números al final de la línea (precios)
-          const priceMatch = cleanLine.match(/(\d[\d\.\,]{2,})/);
+          // Limpiar caracteres y espacios extras
+          cleanLine = cleanLine.replace(/[\$]/g, ' ').replace(/\s+/g, ' ');
+
+          // Expresión regular ajustada para montos en Chile (4.900, 4900, 15.500) al final de línea
+          const priceMatch = cleanLine.match(/(\d{1,3}(?:[\.,\s]\d{3})+|\d{3,6})(?=[^\d]*$)/);
+
           if (priceMatch) {
-            let rawPrice = priceMatch[0].replace(/\./g, '').replace(/,/g, '');
-            let price = parseInt(rawPrice, 10);
+            // Limpiar separadores de miles para obtener el número entero
+            let rawPriceStr = priceMatch[0].replace(/[\.,\s]/g, '');
+            let price = parseInt(rawPriceStr, 10);
 
-            // Filtrar subtotales, IVA o totales
+            // Descartar palabras clave de totales/subtotales
             const lowerLine = cleanLine.toLowerCase();
-            const isTotal = lowerLine.includes('total') || lowerLine.includes('subtotal') || lowerLine.includes('propina') || lowerLine.includes('iva');
+            const isTotal = lowerLine.includes('total') || 
+                            lowerLine.includes('subtotal') || 
+                            lowerLine.includes('propina') || 
+                            lowerLine.includes('iva') || 
+                            lowerLine.includes('monto') ||
+                            lowerLine.includes('efectivo') ||
+                            lowerLine.includes('tarjeta');
 
-            if (price && price > 500 && price < 500000 && !isTotal) {
-              let itemName = cleanLine.replace(priceMatch[0], '').replace(/[\$\*\:\-]/g, '').trim();
-              if (itemName.length > 2) {
-                newItemsFound.push({
-                  id: Date.now() + Math.random(),
-                  name: itemName,
-                  price: price,
-                  assignedTo: []
-                });
+            if (price && price >= 300 && price <= 500000 && !isTotal) {
+              let itemName = cleanLine.substring(0, priceMatch.index).replace(/[\*\:\-\_]/g, '').trim();
+
+              if (itemName.length < 2) {
+                itemName = 'Consumo detectado';
               }
+
+              newItemsFound.push({
+                id: Date.now() + Math.random(),
+                name: itemName,
+                price: price,
+                assignedTo: []
+              });
             }
           }
         });
@@ -561,9 +581,9 @@
           state.items = [...state.items, ...newItemsFound];
           syncToCloud();
           render();
-          alert(`¡Se leyeron ${newItemsFound.length} consumo(s) de la boleta!`);
+          alert(`¡Se detectaron ${newItemsFound.length} ítem(s) en la boleta!`);
         } else {
-          alert('No pudimos detectar precios claros en la imagen. Intenta tomar la foto con más luz y enfocada, o agrega los consumos manualmente.');
+          alert('No pudimos extraer los precios con claridad. Asegúrate de tomar la foto enfocada y con buena luz.');
         }
 
       } catch (err) {
