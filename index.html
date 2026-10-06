@@ -3,12 +3,16 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-  <title>BARCLARO</title>
+  <title>BARCLARO - Divisor de Cuentas en Vivo</title>
+  <!-- Tailwind CSS CDN -->
   <script src="https://cdn.tailwindcss.com"></script>
+  <!-- FontAwesome Icons -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <!-- QRCode.js library -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
-  <!-- Motor OCR Tesseract v4 estable -->
-  <script src="https://cdn.jsdelivr.net/npm/tesseract.js@4/dist/tesseract.min.js"></script>
+  <!-- Tesseract.js v5 -->
+  <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
+  
   <style>
     @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
     
@@ -22,22 +26,22 @@
       min-height: 100%;
       margin: 0;
       padding: 0;
-      background-color: #0f172a;
+      background-color: #020617; /* Slate 950 */
       color: #f8fafc;
       font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
     }
 
     .landing-bg {
-      background: linear-gradient(to bottom, rgba(15, 23, 42, 0.85), rgba(15, 23, 42, 0.98)),
+      background: linear-gradient(to bottom, rgba(2, 6, 23, 0.85), rgba(2, 6, 23, 0.98)),
                   url('https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?q=80&w=1000&auto=format&fit=crop');
       background-size: cover;
       background-position: center;
     }
 
     .glass-card {
-      background: rgba(30, 41, 59, 0.85);
-      backdrop-filter: blur(12px);
-      -webkit-backdrop-filter: blur(12px);
+      background: rgba(15, 23, 42, 0.85); /* Slate 900 */
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
       border: 1px solid rgba(255, 255, 255, 0.08);
     }
 
@@ -46,19 +50,17 @@
     }
   </style>
 </head>
-<body class="min-h-screen w-full flex flex-col bg-slate-900 text-slate-100 antialiased">
+<body class="min-h-screen w-full flex flex-col bg-slate-950 text-slate-100 antialiased selection:bg-amber-500 selection:text-slate-950">
 
-  <!-- BANNER DE NOTIFICACIONES TOAST -->
-  <div id="toast" class="fixed top-4 left-1/2 -translate-x-1/2 z-50 hidden transition-all transform duration-300 w-[90%] max-w-sm">
-    <div id="toastContent" class="glass-card p-4 rounded-2xl shadow-2xl flex items-center gap-3 border border-amber-500/30 text-amber-300 font-bold text-sm">
+  <div id="toast" class="fixed top-4 left-1/2 -translate-x-1/2 z-50 hidden transition-all transform duration-300 w-[92%] max-w-sm">
+    <div id="toastCard" class="glass-card p-4 rounded-2xl shadow-2xl flex items-center gap-3 border border-amber-500/30 text-amber-300 font-bold text-sm">
       <i id="toastIcon" class="fa-solid fa-circle-info text-lg"></i>
       <span id="toastText" class="flex-1 text-slate-100"></span>
     </div>
   </div>
 
-  <div id="app" class="w-full min-h-screen flex flex-col flex-1 pb-10">
+  <div id="app" class="w-full min-h-screen flex flex-col flex-1 pb-12">
 
-    <!-- PANTALLA DE INICIO -->
     <div id="landingView" class="flex-1 flex flex-col justify-between p-5 landing-bg">
       <div class="pt-10 text-center space-y-3">
         <div class="inline-flex items-center justify-center w-20 h-20 rounded-3xl bg-amber-500/20 text-amber-400 border border-amber-500/30 shadow-xl shadow-amber-500/10">
@@ -68,50 +70,49 @@
         <p class="text-slate-300 text-sm max-w-xs mx-auto font-medium">Divide la cuenta del bar en tiempo real con tus amigos.</p>
       </div>
 
-      <div class="glass-card p-6 rounded-3xl space-y-4 my-auto shadow-2xl">
+      <div class="glass-card p-6 rounded-3xl space-y-4 my-auto shadow-2xl border border-slate-800">
         <button onclick="startSession('online')" class="w-full py-4 bg-gradient-to-r from-amber-500 to-amber-600 active:from-amber-400 active:to-amber-500 text-slate-950 font-black rounded-2xl shadow-xl shadow-amber-500/20 flex items-center justify-center gap-3 text-lg transition-all">
           <i class="fa-solid fa-users text-xl"></i>
           <span>Mesa en Vivo (Compartida)</span>
         </button>
         
-        <button onclick="startSession('local')" class="w-full py-3.5 bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold rounded-2xl border border-slate-700 flex items-center justify-center gap-2 text-base transition-all">
+        <button onclick="startSession('local')" class="w-full py-3.5 bg-slate-900 hover:bg-slate-800 text-slate-200 font-bold rounded-2xl border border-slate-700 flex items-center justify-center gap-2 text-base transition-all">
           <i class="fa-solid fa-user text-sm"></i>
           <span>Mesa Local (Solo en tu teléfono)</span>
         </button>
       </div>
 
       <div class="text-center text-xs text-slate-400 font-medium">
-        <span>Formato CLP ($) • Propina 10%</span>
+        <span>Formato CLP ($) • Propina 10% Sugerida</span>
       </div>
     </div>
 
-    <!-- VISTA PRINCIPAL -->
-    <div id="mainView" class="hidden flex-1 flex flex-col bg-slate-900 w-full">
+    <div id="mainView" class="hidden flex-1 flex flex-col bg-slate-950 w-full">
       
       <!-- HEADER -->
-      <header class="px-4 py-3 bg-slate-900/95 backdrop-blur-md sticky top-0 z-30 border-b border-slate-800 flex items-center justify-between w-full">
-        <button onclick="showLanding()" class="p-2.5 text-slate-400 hover:text-white rounded-xl active:bg-slate-800 transition-colors">
-          <i class="fa-solid fa-house text-xl"></i>
+      <header class="px-4 py-3.5 bg-slate-900/90 backdrop-blur-md sticky top-0 z-30 border-b border-slate-800/80 flex items-center justify-between w-full">
+        <button onclick="showLanding()" class="p-2 text-slate-400 hover:text-white rounded-xl active:bg-slate-800 transition-colors">
+          <i class="fa-solid fa-house text-lg"></i>
         </button>
         <div class="text-center">
           <h2 class="font-extrabold text-lg text-white tracking-wide">BARCLARO</h2>
           <span id="roomBadge" class="text-[11px] text-amber-400 font-bold bg-amber-500/10 px-2.5 py-0.5 rounded-full border border-amber-500/20">Mesa Local</span>
         </div>
-        <button onclick="resetAll()" class="p-2.5 text-slate-400 hover:text-rose-400 rounded-xl active:bg-slate-800 transition-colors" title="Reiniciar Mesa">
-          <i class="fa-solid fa-rotate-right text-xl"></i>
+        <button onclick="resetAll()" class="p-2 text-slate-400 hover:text-rose-400 rounded-xl active:bg-slate-800 transition-colors" title="Reiniciar Mesa">
+          <i class="fa-solid fa-rotate-right text-lg"></i>
         </button>
       </header>
 
-      <main class="p-4 space-y-5 flex-1 w-full">
+      <main class="p-4 space-y-5 flex-1 w-full max-w-xl mx-auto">
         
-        <!-- BARRA COLABORATIVA EN VIVO -->
-        <section id="onlineBar" class="hidden glass-card p-3.5 rounded-2xl space-y-2.5 w-full">
+        <!-- ONLINE SYNC BAR -->
+        <section id="onlineBar" class="hidden glass-card p-4 rounded-2xl space-y-3 w-full border border-amber-500/20">
           <div class="flex items-center justify-between text-xs font-bold text-slate-300">
             <span class="flex items-center gap-2 text-emerald-400">
               <span class="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></span>
-              Sincronizado
+              Mesa Sincronizada
             </span>
-            <span>Código: <strong id="roomCodeDisplay" class="text-amber-400 font-mono text-sm">-----</strong></span>
+            <span>Código: <strong id="roomCodeDisplay" class="text-amber-400 font-mono text-sm tracking-wider">-----</strong></span>
           </div>
           <div class="grid grid-cols-2 gap-2">
             <button onclick="copyShareLink()" class="py-3 bg-amber-500/15 active:bg-amber-500/30 border border-amber-500/30 text-amber-400 font-bold rounded-xl text-xs flex items-center justify-center gap-2">
@@ -125,20 +126,20 @@
           </div>
         </section>
 
-        <!-- INTEGRANTES -->
+        <!-- PEOPLE LIST -->
         <section class="glass-card p-4 rounded-2xl space-y-3 w-full">
           <div class="flex items-center justify-between">
             <h3 class="text-xs font-bold text-amber-400 uppercase tracking-wider">Integrantes de la Mesa</h3>
-            <button onclick="addPerson()" class="text-xs bg-amber-500 text-slate-950 font-black px-3 py-1.5 rounded-xl active:bg-amber-400 transition-colors flex items-center gap-1.5">
+            <button onclick="addPerson()" class="text-xs bg-amber-500 text-slate-950 font-black px-3.5 py-1.5 rounded-xl active:bg-amber-400 transition-colors flex items-center gap-1.5">
               <i class="fa-solid fa-plus"></i> Agregar
             </button>
           </div>
           <div id="peopleList" class="flex flex-wrap gap-2"></div>
         </section>
 
-        <!-- ACCIONES BOLETA -->
+        <!-- RECEIPT ACTIONS & OCR INPUT -->
         <section class="grid grid-cols-2 gap-3 w-full">
-          <button onclick="simulateReceipt()" class="py-3.5 px-3 bg-slate-800 active:bg-slate-700 border border-slate-700 rounded-2xl flex items-center justify-center gap-2 text-xs font-bold text-slate-200 transition-all">
+          <button onclick="simulateReceipt()" class="py-3.5 px-3 bg-slate-900 active:bg-slate-800 border border-slate-800 rounded-2xl flex items-center justify-center gap-2 text-xs font-bold text-slate-200 transition-all">
             <i class="fa-solid fa-wand-magic-sparkles text-amber-400 text-sm"></i>
             <span>Cargar Demo</span>
           </button>
@@ -149,37 +150,37 @@
           </label>
         </section>
 
-        <!-- ESTADO LECTURA OCR -->
+        <!-- OCR PROCESSING INDICATOR -->
         <div id="ocrStatus" class="hidden glass-card p-4 rounded-2xl border-amber-500/30 space-y-2 text-center">
           <div class="flex items-center justify-center gap-2 text-amber-400 font-bold text-sm">
             <i class="fa-solid fa-spinner animate-spin text-lg"></i>
             <span id="ocrStatusText">Procesando foto de boleta...</span>
           </div>
-          <p class="text-xs text-slate-400">Analizando el texto e ítems de consumo.</p>
+          <p class="text-xs text-slate-400">Optimizando legibilidad y extrayendo consumos...</p>
         </div>
 
-        <!-- AGREGAR ITEM MANUAL -->
+        <!-- MANUAL ITEM ADDITION -->
         <section class="glass-card p-4 rounded-2xl space-y-3 w-full">
           <h3 class="text-xs font-bold text-slate-400 uppercase tracking-wider">Agregar Consumo Manual</h3>
           <div class="flex gap-2">
-            <input type="text" id="itemName" placeholder="Ej: Pisco Sour" class="flex-1 bg-slate-900 border border-slate-700 rounded-xl px-3 py-2.5 text-sm text-white focus:outline-none focus:border-amber-500">
-            <input type="number" id="itemPrice" placeholder="Monto ($)" class="w-28 bg-slate-900 border border-slate-700 rounded-xl px-3 py-2.5 text-sm text-white focus:outline-none focus:border-amber-500">
+            <input type="text" id="itemName" placeholder="Ej: Pisco Sour" class="flex-1 bg-slate-950 border border-slate-800 rounded-xl px-3 py-2.5 text-sm text-white focus:outline-none focus:border-amber-500">
+            <input type="number" id="itemPrice" placeholder="Monto ($)" class="w-28 bg-slate-950 border border-slate-800 rounded-xl px-3 py-2.5 text-sm text-white focus:outline-none focus:border-amber-500">
             <button onclick="addManualItem()" class="bg-amber-500 text-slate-950 px-4 rounded-xl font-black active:bg-amber-400 transition-colors flex items-center justify-center">
               <i class="fa-solid fa-plus text-base"></i>
             </button>
           </div>
         </section>
 
-        <!-- LISTA DE CONSUMOS -->
+        <!-- CONSUMPTION ITEMS LIST -->
         <section class="space-y-3 w-full">
           <div class="flex items-center justify-between">
             <h3 class="text-xs font-bold text-slate-400 uppercase tracking-wider">Detalle de Consumos</h3>
-            <span id="itemCountBadge" class="text-xs bg-slate-800 text-slate-400 px-2.5 py-0.5 rounded-full font-bold">0 ítems</span>
+            <span id="itemCountBadge" class="text-xs bg-slate-900 text-slate-400 px-2.5 py-0.5 rounded-full font-bold border border-slate-800">0 ítems</span>
           </div>
           <div id="itemsContainer" class="space-y-2.5 w-full"></div>
         </section>
 
-        <!-- PROPINA -->
+        <!-- TIP TOGGLE -->
         <section class="glass-card p-4 rounded-2xl flex items-center justify-between w-full">
           <div class="flex items-center gap-3">
             <div class="w-8 h-8 rounded-xl bg-amber-500/10 text-amber-400 flex items-center justify-center font-bold">
@@ -193,7 +194,7 @@
           <input type="checkbox" id="tipToggle" checked onchange="updateTipToggle()" class="w-6 h-6 accent-amber-500 rounded cursor-pointer">
         </section>
 
-        <!-- DATOS BANCARIOS -->
+        <!-- BANK DETAILS -->
         <section class="glass-card p-4 rounded-2xl space-y-3 w-full">
           <div class="flex justify-between items-center">
             <h3 class="text-xs font-bold text-amber-400 uppercase tracking-wider flex items-center gap-1.5">
@@ -204,15 +205,15 @@
           </div>
 
           <div class="grid grid-cols-2 gap-2 text-xs w-full">
-            <input type="text" id="bankName" placeholder="Tu Nombre" oninput="saveBankData()" class="bg-slate-900 border border-slate-700 rounded-xl p-2.5 text-white focus:outline-none focus:border-amber-500">
-            <input type="text" id="bankRut" placeholder="RUT (12.345.678-9)" oninput="saveBankData()" class="bg-slate-900 border border-slate-700 rounded-xl p-2.5 text-white focus:outline-none focus:border-amber-500">
-            <input type="text" id="bankEntity" placeholder="Banco (ej: Santander)" oninput="saveBankData()" class="bg-slate-900 border border-slate-700 rounded-xl p-2.5 text-white focus:outline-none focus:border-amber-500">
-            <input type="text" id="bankType" placeholder="Tipo (CuentaRUT/Vista)" oninput="saveBankData()" class="bg-slate-900 border border-slate-700 rounded-xl p-2.5 text-white focus:outline-none focus:border-amber-500">
-            <input type="text" id="bankAccount" placeholder="Nº de Cuenta" oninput="saveBankData()" class="col-span-2 bg-slate-900 border border-slate-700 rounded-xl p-2.5 text-white focus:outline-none focus:border-amber-500">
+            <input type="text" id="bankName" placeholder="Tu Nombre" oninput="saveBankData()" class="bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white focus:outline-none focus:border-amber-500">
+            <input type="text" id="bankRut" placeholder="RUT (12.345.678-9)" oninput="saveBankData()" class="bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white focus:outline-none focus:border-amber-500">
+            <input type="text" id="bankEntity" placeholder="Banco (ej: BancoEstado)" oninput="saveBankData()" class="bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white focus:outline-none focus:border-amber-500">
+            <input type="text" id="bankType" placeholder="Tipo (CuentaRUT/Vista)" oninput="saveBankData()" class="bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white focus:outline-none focus:border-amber-500">
+            <input type="text" id="bankAccount" placeholder="Nº de Cuenta" oninput="saveBankData()" class="col-span-2 bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white focus:outline-none focus:border-amber-500">
           </div>
         </section>
 
-        <!-- RESUMEN FINAL -->
+        <!-- SUMMARY SECTION -->
         <section class="glass-card p-4 rounded-2xl space-y-3 w-full">
           <h3 class="text-xs font-bold text-amber-400 uppercase tracking-wider">Resumen por Persona</h3>
           <div id="summaryContainer" class="space-y-2 divide-y divide-slate-800/80"></div>
@@ -223,7 +224,7 @@
           </div>
         </section>
 
-        <!-- COBRAR WHATSAPP -->
+        <!-- WHATSAPP SHARE BUTTON -->
         <button onclick="shareWhatsApp()" class="w-full py-4 bg-emerald-600 active:bg-emerald-500 text-white font-black rounded-2xl shadow-xl shadow-emerald-600/20 flex items-center justify-center gap-2 text-base transition-all">
           <i class="fa-brands fa-whatsapp text-xl"></i>
           <span>Enviar Cobros por WhatsApp</span>
@@ -232,9 +233,9 @@
       </main>
     </div>
 
-    <!-- MODAL DE ASIGNACIÓN -->
+    <!-- ITEM ASSIGNMENT MODAL -->
     <div id="assignModal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-md z-50 hidden flex items-end sm:items-center justify-center p-3">
-      <div class="bg-slate-900 border border-slate-800 w-full rounded-3xl p-5 space-y-4 shadow-2xl">
+      <div class="bg-slate-900 border border-slate-800 w-full max-w-md rounded-3xl p-5 space-y-4 shadow-2xl">
         <div class="flex justify-between items-center">
           <div>
             <h4 id="modalItemTitle" class="font-black text-white text-lg">Asignar Consumo</h4>
@@ -259,12 +260,12 @@
       </div>
     </div>
 
-    <!-- MODAL QR -->
+    <!-- QR CODE MODAL -->
     <div id="qrModal" class="fixed inset-0 bg-slate-950/85 backdrop-blur-md z-50 hidden flex items-center justify-center p-4">
       <div class="bg-slate-900 border border-slate-800 w-full max-w-xs rounded-3xl p-6 text-center space-y-4 shadow-2xl">
         <h4 class="font-black text-white text-lg">Escanear para Sumarse</h4>
         <div id="qrcode" class="flex justify-center p-3 bg-white rounded-2xl mx-auto w-fit"></div>
-        <p class="text-xs text-slate-400">Escanea con la cámara del celular para abrir la mesa.</p>
+        <p class="text-xs text-slate-400">Escanea con la cámara para abrir la mesa en vivo.</p>
         <button onclick="closeQRModal()" class="w-full py-3 bg-slate-800 text-slate-200 font-bold rounded-xl text-xs active:bg-slate-700">
           Cerrar
         </button>
@@ -300,6 +301,7 @@
       }
     });
 
+    // TOAST NOTIFICATIONS (Replaces native alert popups)
     function showToast(message, isError = false) {
       const toast = document.getElementById('toast');
       const toastText = document.getElementById('toastText');
@@ -530,14 +532,72 @@
         { id: Date.now() + 2, name: '1x Mojito Trad. 500cc', price: 8500, assignedTo: [] },
         { id: Date.now() + 3, name: '2x Copa sangria', price: 9000, assignedTo: [...state.people] },
         { id: Date.now() + 4, name: '1x Jugo Frutilla', price: 3900, assignedTo: [] },
-        { id: Date.now() + 5, name: '1x Jugo Frutilla', price: 3900, assignedTo: [] }
+        { id: Date.now() + 5, name: '1x Pisco Alto del Carmen 35º', price: 6500, assignedTo: [] }
       ];
       syncToCloud();
       render();
       showToast('Cargados datos de prueba');
     }
 
-    // MANEJADOR DE SCANNER ROBUSTO
+    function processImageFile(file) {
+      return new Promise((resolve) => {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          const img = new Image();
+          img.onload = () => {
+            const canvas = document.createElement('canvas');
+            const MAX_WIDTH = 1800;
+            let width = img.width;
+            let height = img.height;
+
+            if (width > MAX_WIDTH) {
+              height = Math.round((height * MAX_WIDTH) / width);
+              width = MAX_WIDTH;
+            }
+
+            canvas.width = width;
+            canvas.height = height;
+
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(img, 0, 0, width, height);
+
+            // Gentle Grayscale + Soft Contrast enhancement (Preserves thermal print lines)
+            const imgData = ctx.getImageData(0, 0, width, height);
+            const d = imgData.data;
+            const contrastFactor = 1.25; // Moderate contrast boost
+
+            for (let i = 0; i < d.length; i += 4) {
+              // Luminance grayscale
+              let gray = 0.299 * d[i] + 0.587 * d[i + 1] + 0.114 * d[i + 2];
+              
+              // Apply gentle contrast scaling around midpoint 128
+              gray = (gray - 128) * contrastFactor + 128;
+              gray = Math.min(255, Math.max(0, gray));
+
+              d[i] = gray;
+              d[i + 1] = gray;
+              d[i + 2] = gray;
+            }
+            ctx.putImageData(imgData, 0, 0);
+
+            resolve(canvas.toDataURL('image/jpeg', 0.88));
+          };
+          img.src = e.target.result;
+        };
+        reader.readAsDataURL(file);
+      });
+    }
+
+    // Helper to fix common OCR confusions in numeric zones
+    function fixOCRNumbers(str) {
+      return str
+        .replace(/[Oo]/g, '0')
+        .replace(/[Iil]/g, '1')
+        .replace(/[S]/g, '5')
+        .replace(/[B]/g, '8')
+        .replace(/[Zz]/g, '2');
+    }
+
     async function handleImageUpload(e) {
       const file = e.target.files[0];
       if (!file) return;
@@ -545,12 +605,14 @@
       const statusBox = document.getElementById('ocrStatus');
       const statusText = document.getElementById('ocrStatusText');
       statusBox.classList.remove('hidden');
-      statusText.innerText = 'Escaneando boleta...';
+      statusText.innerText = 'Optimizando foto...';
 
       try {
-        // Inicializar Tesseract v4 en español
+        const optimizedImage = await processImageFile(file);
+        statusText.innerText = 'Leyendo texto de la boleta...';
+
         const worker = await Tesseract.createWorker('spa');
-        const ret = await worker.recognize(file);
+        const ret = await worker.recognize(optimizedImage);
         await worker.terminate();
 
         const rawText = ret.data.text;
@@ -558,36 +620,67 @@
         let newItemsFound = [];
 
         const ignoreKeywords = [
-          'cuenta', 'mesero', 'comensales', 'mesa', 'fecha', 'id', 'propina',
-          'total', 'subtotal', 'sugerida', 'evaluar', 'experiencia', 'boleta',
-          'delivery', 'rut', 'bienvenido', 'gracias', 'atendido', 'atendido por'
+          'total', 'subtotal', 'propina', 'sugerida', 'boleta', 'rut', 
+          'fecha', 'mesa', 'mesero', 'atendido', 'gracias', 'efectivo', 
+          'tarjeta', 'evaluar', 'comensales', 'bienvenido', 'iva', 'neto'
         ];
+
+        let pendingName = '';
 
         lines.forEach(line => {
           let cleanLine = line.trim();
-          if (!cleanLine || cleanLine.length < 3) return;
+          if (!cleanLine || cleanLine.length < 2) return;
 
           const lower = cleanLine.toLowerCase();
           if (ignoreKeywords.some(k => lower.includes(k))) return;
 
-          // Expresión regular robusta para capturar el nombre y el monto final
-          const match = cleanLine.match(/(.+?)(?:\s+[\$\#]?\s*)(\d{1,3}(?:[\.\s,]\d{3})+|\d{3,6})\s*$/);
+          // Attempt to locate trailing price block
+          // Tokens divided by spaces, points, commas or currency symbols
+          const tokens = cleanLine.split(/\s+/);
+          let priceFound = null;
+          let nameTokens = [...tokens];
 
-          if (match) {
-            let namePart = match[1].trim();
-            let rawPrice = match[2].replace(/[\.\s,]/g, '');
-            let price = parseInt(rawPrice, 10);
+          // Check last 2 tokens for potential price
+          for (let i = tokens.length - 1; i >= Math.max(0, tokens.length - 2); i--) {
+            let candidateStr = tokens[i].replace(/[\$\*\:\_]/g, '');
+            // Substitute typical OCR character errors
+            candidateStr = fixOCRNumbers(candidateStr);
 
-            // Limpieza básica del texto
-            namePart = namePart.replace(/^[\*\:\-\_\$\d\.\s]+/, '').replace(/[\*\:\-\_\$]/g, '').trim();
+            // Clean Chilean thousand separators ($5.500 -> 5500, 5,500 -> 5500, 5-500 -> 5500)
+            let digitsOnly = candidateStr.replace(/[\.\,\-\s]/g, '');
 
-            if (price >= 500 && price <= 500000 && namePart.length >= 2) {
+            if (/^\d{3,6}$/.test(digitsOnly)) {
+              let parsedPrice = parseInt(digitsOnly, 10);
+              if (parsedPrice >= 500 && parsedPrice <= 350000) {
+                priceFound = parsedPrice;
+                nameTokens = tokens.slice(0, i);
+                break;
+              }
+            }
+          }
+
+          let namePart = nameTokens.join(' ').replace(/[\*\:\_\$\-\=\|]/g, '').trim();
+
+          if (priceFound !== null) {
+            // Combine with pending product line if previous line was just text
+            let finalName = pendingName ? (pendingName + ' ' + namePart).trim() : namePart;
+            pendingName = '';
+
+            // Clean leading quantity patterns (e.g. "1 x", "1x", "2 ")
+            finalName = finalName.replace(/^[\d]+\s*x\s*/i, '').trim();
+
+            if (finalName.length >= 2) {
               newItemsFound.push({
                 id: Date.now() + Math.random(),
-                name: namePart,
-                price: price,
+                name: finalName,
+                price: priceFound,
                 assignedTo: []
               });
+            }
+          } else {
+            // If line has text but no price, hold it in case the price is on the next line
+            if (namePart.length >= 3 && !/\d{4}/.test(namePart)) {
+              pendingName = pendingName ? (pendingName + ' ' + namePart) : namePart;
             }
           }
         });
@@ -598,9 +691,9 @@
           state.items = [...state.items, ...newItemsFound];
           syncToCloud();
           render();
-          showToast(`¡Se extrajeron ${newItemsFound.length} ítems de la boleta!`);
+          showToast(`¡Se extrajeron ${newItemsFound.length} consumos correctamente!`);
         } else {
-          showToast('No se reconocieron ítems de la lista. Intenta enfocarla mejor o agrégalos manualmente.', true);
+          showToast('No se identificaron precios claros. Intenta enfocar mejor la lista de consumos.', true);
         }
 
       } catch (err) {
@@ -652,7 +745,7 @@
       } else {
         state.people.forEach((p, idx) => {
           const badge = document.createElement('span');
-          badge.className = 'inline-flex items-center gap-2 px-3.5 py-1.5 bg-slate-800 border border-slate-700 text-slate-100 font-bold text-xs rounded-full';
+          badge.className = 'inline-flex items-center gap-2 px-3.5 py-1.5 bg-slate-900 border border-slate-800 text-slate-100 font-bold text-xs rounded-full';
           badge.innerHTML = `
             ${p}
             <i class="fa-solid fa-xmark text-slate-400 hover:text-rose-400 cursor-pointer" onclick="removePerson(${idx})"></i>
@@ -682,7 +775,7 @@
           </div>
           <div class="text-right">
             <p class="font-black text-amber-400 text-base">${formatCLP(item.price)}</p>
-            <button onclick="openAssignModal(${item.id})" class="text-[11px] bg-slate-800 text-slate-200 active:text-white px-2.5 py-1 rounded-lg mt-1 border border-slate-700 font-bold">
+            <button onclick="openAssignModal(${item.id})" class="text-[11px] bg-slate-900 text-slate-200 active:text-white px-2.5 py-1 rounded-lg mt-1 border border-slate-800 font-bold">
               <i class="fa-solid fa-user-plus"></i> Asignar
             </button>
           </div>
